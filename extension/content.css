@@ -21,3 +21,34 @@
   justify-content: center;
   align-items: center;
 }
+
+/* Copy for Notion floating button (when selection includes LaTeX) */
+.gpt-eq-copy-for-notion {
+  position: fixed;
+  z-index: 2147483647;
+  padding: 0.5em 0.75em;
+  font-size: 13px;
+  font-family: inherit;
+  font-weight: 500;
+  color: #fff;
+  background-color: #343541;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.2);
+}
+.gpt-eq-copy-for-notion:hover {
+  background-color: #40414f;
+}
+.gpt-eq-copy-for-notion:active {
+  transform: scale(0.98);
+}
+
+/* Success state after copy */
+.gpt-eq-copy-for-notion-done {
+  background-color: #0d7d4d !important;
+  pointer-events: none;
+}
+.gpt-eq-copy-for-notion-done:hover {
+  background-color: #0d7d4d !important;
+}
