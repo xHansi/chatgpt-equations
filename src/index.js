@@ -4,7 +4,7 @@ class NotionCopyGPT {
     this.copyForNotionButton = null;
   }
 
-  /** Returns true if the current selection contains at least one .katex element */
+  /** Returns true if the current selection contains at least one .katex element. */
   selectionContainsKatex(selection) {
     if (!selection || selection.rangeCount === 0) return false;
     const range = selection.getRangeAt(0);
@@ -13,7 +13,7 @@ class NotionCopyGPT {
     return fragment.querySelector && fragment.querySelector(".katex");
   }
 
-  /** Decode HTML entities in LaTeX so clipboard gets plain text (e.g. &amp; -> &) */
+  /** Decodes HTML entities in LaTeX so the clipboard receives plain text (e.g. &amp; -> &). */
   decodeLatexFromAnnotation(html) {
     if (!html) return "";
     const div = document.createElement("div");
@@ -21,16 +21,17 @@ class NotionCopyGPT {
     return (div.textContent || div.innerText || "").trim();
   }
 
-  /** Walk a fragment/node tree in document order; build Notion string.
+  /**
+   * Walks a fragment/node tree in document order and builds a Notion-friendly string.
    * - Plain text is kept with spaces normalized.
-   * - KaTeX equations become $$latex$$.
+   * - KaTeX equations become ${latex}$.
    * - Basic structure (headings, paragraphs, list items, line breaks) is preserved
-   *   using Markdown-like formatting so Notion can keep layout. */
+   *   using lightweight Markdown-style formatting so Notion keeps the layout.
+   */
   getNotionFormatFromFragment(node) {
     let out = "";
     if (!node) return out;
 
-    // Text: collapse spaces/tabs but let structural newlines be added by elements
     if (node.nodeType === Node.TEXT_NODE) {
       return (node.textContent || "").replace(/[ \t]+/g, " ");
     }
@@ -38,7 +39,7 @@ class NotionCopyGPT {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node;
 
-      // KaTeX equation: wrap original LaTeX in ${...}$ (für Notion-Workflow)
+      // KaTeX equation: wrap original LaTeX in ${...}$ for the Notion workflow.
       if (el.classList && el.classList.contains("katex")) {
         const annotation = el.querySelector(".katex-mathml annotation");
         const raw = annotation ? annotation.innerHTML : "";
@@ -48,29 +49,24 @@ class NotionCopyGPT {
 
       const tag = el.tagName;
 
-      // Explicit line break
       if (tag === "BR") {
         return "\n";
       }
 
-      // Recursively collect children
       for (let i = 0; i < el.childNodes.length; i++) {
         out += this.getNotionFormatFromFragment(el.childNodes[i]);
       }
 
-      // Bold / strong text -> Markdown **bold**
       if (tag === "B" || tag === "STRONG") {
         const inner = out.trim();
         return inner ? `**${inner}**` : "";
       }
 
-      // Italic / emphasis -> Markdown *italic*
       if (tag === "I" || tag === "EM") {
         const inner = out.trim();
         return inner ? `*${inner}*` : "";
       }
 
-      // Headings: map to Markdown-style so Notion can convert on paste
       if (tag && /^H[1-6]$/.test(tag)) {
         const level = parseInt(tag.substring(1), 10) || 1;
         const hashes = "#".repeat(Math.min(level, 3));
@@ -78,13 +74,11 @@ class NotionCopyGPT {
         return inner ? `${hashes} ${inner}\n\n` : "";
       }
 
-      // List items: prefix with "- "
       if (tag === "LI") {
         const inner = out.trim();
         return inner ? `- ${inner}\n` : "";
       }
 
-      // Paragraph-like blocks: add blank line after
       if (tag === "P" || tag === "DIV" || tag === "SECTION" || tag === "ARTICLE") {
         const inner = out.trim();
         return inner ? `${inner}\n\n` : "";
@@ -94,7 +88,6 @@ class NotionCopyGPT {
       return out;
     }
 
-    // DocumentFragment (e.g. from range.cloneContents()) — walk its children
     if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
       for (let i = 0; i < node.childNodes.length; i++) {
         out += this.getNotionFormatFromFragment(node.childNodes[i]);
@@ -104,21 +97,26 @@ class NotionCopyGPT {
     return out;
   }
 
-  /** Build a single string for Notion from the current selection.
-   * Keeps equations as $$latex$ segments and preserves basic layout (headings, paragraphs, lists). */
+  /**
+   * Builds a single string for Notion from the current selection.
+   * Keeps equations as ${latex}$ segments and preserves basic layout
+   * (headings, paragraphs, lists).
+   */
   getNotionFormatFromSelection(selection) {
     if (!selection || selection.rangeCount === 0) return "";
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const raw = this.getNotionFormatFromFragment(fragment);
-    // Normalize spaces but preserve newlines that encode structure
     const normalized = (raw || "")
       .replace(/[ \t]+/g, " ")
       .replace(/\n{3,}/g, "\n\n");
     return normalized.trim();
   }
 
-  /** Copy text to clipboard; use execCommand fallback if clipboard API fails (e.g. in some iframes) */
+  /**
+   * Copies text to the clipboard.
+   * Uses the modern Clipboard API when available and falls back to document.execCommand.
+   */
   copyTextToClipboard(text) {
     if (!text) return Promise.resolve(false);
     if (navigator.clipboard && navigator.clipboard.writeText) {
@@ -140,7 +138,6 @@ class NotionCopyGPT {
   }
 
   showCopyForNotionButton(selection) {
-    // Don't replace the button if it's already showing "✓ Copied!" — let it stay until timeout
     if (this.copyForNotionButton && this.copyForNotionButton.classList.contains("gpt-eq-copy-for-notion-done")) {
       return;
     }
@@ -154,7 +151,6 @@ class NotionCopyGPT {
     const lastRect = rects.length ? rects[rects.length - 1] : null;
     if (!lastRect) return;
 
-    // Capture text now; selection is often cleared when user clicks the button
     let textToCopy = this.getNotionFormatFromSelection(selection);
 
     const btn = document.createElement("button");
@@ -164,12 +160,10 @@ class NotionCopyGPT {
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
-      // Use captured text; if empty, try current selection once
       let toCopy = textToCopy;
       if (!toCopy) toCopy = this.getNotionFormatFromSelection(window.getSelection());
       const finalText = toCopy || "";
 
-      // Text auch in chrome.storage.local hinterlegen, damit Notion ihn abrufen kann
       if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
         chrome.storage.local.set({ notionCopyText: finalText });
       }
@@ -227,14 +221,23 @@ class NotionCopyGPT {
   }
 }
 
-// Nur auf ChatGPT-Domains das Copy-for-Notion-Feature aktivieren
-if (location.host.includes("chat.openai.com") || location.host.includes("chatgpt.com")) {
+const isChatGptHost =
+  location.host.includes("chat.openai.com") || location.host.includes("chatgpt.com");
+
+const isNotionHost =
+  location.host.includes("notion.so") || location.host.includes("notion.site");
+
+if (isChatGptHost) {
   new NotionCopyGPT();
 }
 
-// Auf Notion-Domains: nach Paste alle ${...}$-Formeln finden und per Shortcut durchgehen
-if (location.host.includes("notion.so") || location.host.includes("notion.site")) {
-  // Formeln im aktuellen contenteditable-Bereich
+/**
+ * Sets up equation navigation on Notion:
+ * - After paste, all ${...}$ segments in the active contenteditable root are collected.
+ * - F2 removes the delimiters of the current equation and selects the next one.
+ * - Cmd/Ctrl+Shift+E lets Notion render the selection, then removes the delimiters and advances.
+ */
+if (isNotionHost) {
   let equationTargets = [];
   let equationIndex = 0;
   let currentEditableRoot = null;
