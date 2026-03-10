@@ -3,6 +3,7 @@
   "name": "ChatGPT → Notion Math Copy",
   "description": "Copy ChatGPT responses (text + LaTeX) in a format that pastes cleanly into Notion.",
   "version": "0.1.0",
+  "permissions": ["storage"],
   "icons": {
     "16": "images/icon.png",
     "32": "images/icon.png",
@@ -12,13 +13,23 @@
   "content_scripts": [
     {
       "js": ["./content.js"],
-      "matches": ["*://chat.openai.com/*", "*://chatgpt.com/*"],
+      "matches": [
+        "*://chat.openai.com/*",
+        "*://chatgpt.com/*",
+        "https://www.notion.so/*",
+        "https://www.notion.site/*"
+      ],
       "run_at": "document_end",
       "all_frames": true
     },
     {
       "css": ["./content.css"],
-      "matches": ["*://chat.openai.com/*", "*://chatgpt.com/*"],
+      "matches": [
+        "*://chat.openai.com/*",
+        "*://chatgpt.com/*",
+        "https://www.notion.so/*",
+        "https://www.notion.site/*"
+      ],
       "run_at": "document_start",
       "all_frames": true
     }

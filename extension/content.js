@@ -39,8 +39,7 @@ var NotionCopyGPT = /*#__PURE__*/function () {
 
     /** Walk a fragment/node tree in document order; build Notion string.
      * - Plain text is kept with spaces normalized.
-     * - KaTeX equations become $$latex$ (one trailing $) so that after paste in Notion,
-     *   typing the final $ triggers rendering.
+     * - KaTeX equations become $$latex$$.
      * - Basic structure (headings, paragraphs, list items, line breaks) is preserved
      *   using Markdown-like formatting so Notion can keep layout. */
   }, {
@@ -56,12 +55,12 @@ var NotionCopyGPT = /*#__PURE__*/function () {
       if (node.nodeType === Node.ELEMENT_NODE) {
         var el = node;
 
-        // KaTeX equation: use $$latex$ so typing final $ in Notion converts it
+        // KaTeX equation: wrap original LaTeX in ${...}$ (für Notion-Workflow)
         if (el.classList && el.classList.contains("katex")) {
           var annotation = el.querySelector(".katex-mathml annotation");
           var raw = annotation ? annotation.innerHTML : "";
           var latex = this.decodeLatexFromAnnotation(raw);
-          return latex ? "$$".concat(latex, "$") : "";
+          return latex ? '${'.concat(latex, "}$") : "";
         }
         var tag = el.tagName;
 
@@ -190,7 +189,15 @@ var NotionCopyGPT = /*#__PURE__*/function () {
         // Use captured text; if empty, try current selection once
         var toCopy = textToCopy;
         if (!toCopy) toCopy = _this.getNotionFormatFromSelection(window.getSelection());
-        _this.copyTextToClipboard(toCopy || "").then(function (didCopy) {
+        var finalText = toCopy || "";
+
+        // Text auch in chrome.storage.local hinterlegen, damit Notion ihn abrufen kann
+        if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+          chrome.storage.local.set({
+            notionCopyText: finalText
+          });
+        }
+        _this.copyTextToClipboard(finalText).then(function () {
           btn.textContent = "✓ Copied!";
           btn.classList.add("gpt-eq-copy-for-notion-done");
           setTimeout(function () {
@@ -250,8 +257,199 @@ var NotionCopyGPT = /*#__PURE__*/function () {
     }
   }]);
   return NotionCopyGPT;
-}();
-var notionCopyGPT = new NotionCopyGPT();
+}(); // Nur auf ChatGPT-Domains das Copy-for-Notion-Feature aktivieren
+if (location.host.includes("chat.openai.com") || location.host.includes("chatgpt.com")) {
+  new NotionCopyGPT();
+}
+
+// Auf Notion-Domains: nach Paste alle ${...}$-Formeln finden und per Shortcut durchgehen
+if (location.host.includes("notion.so") || location.host.includes("notion.site")) {
+  // Formeln im aktuellen contenteditable-Bereich
+  var equationTargets = [];
+  var equationIndex = 0;
+  var currentEditableRoot = null;
+
+  // Asymmetrische Delimiter für Formeln: ${ ... }$
+  var OPEN_DELIM = "${";
+  var CLOSE_DELIM = "}$";
+  var EQUATION_REGEX = /\$\{([\s\S]*?)\}\$/g;
+  var getCurrentEditableRoot = function getCurrentEditableRoot() {
+    var el = document.activeElement;
+    while (el && !el.isContentEditable) {
+      el = el.parentElement;
+    }
+    return el || null;
+  };
+  var deleteRangeSafely = function deleteRangeSafely(range) {
+    if (!range) return;
+    var startNode = range.startContainer;
+    var endNode = range.endContainer;
+    var startOffset = range.startOffset;
+    var endOffset = range.endOffset;
+    if (startNode === endNode && startNode.nodeType === Node.TEXT_NODE && typeof startOffset === "number" && typeof endOffset === "number") {
+      var text = startNode.textContent || "";
+      var before = text.slice(0, startOffset);
+      var after = text.slice(endOffset);
+      startNode.textContent = before + after;
+      return;
+    }
+    var sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(range);
+    try {
+      document.execCommand("delete");
+    } catch (_unused) {
+      // ignore
+    }
+    sel.removeAllRanges();
+  };
+
+  // Sammelt Ranges für alle ${...}$-Vorkommen, auch wenn sie sich über mehrere
+  // Textknoten erstrecken. Für jede Formel werden drei Ranges geliefert:
+  // inner (nur Inhalt), left (linkes "${") und right (rechtes "}$").
+  var collectEquationRanges = function collectEquationRanges(root) {
+    var textNodes = [];
+    var offsets = [];
+    var totalLength = 0;
+    var walker = document.createTreeWalker(root, NodeFilter.SHOW_TEXT, null, false);
+    var node;
+    while (node = walker.nextNode()) {
+      var text = node.textContent || "";
+      if (!text.length) continue;
+      textNodes.push(node);
+      offsets.push(totalLength);
+      totalLength += text.length;
+    }
+    var fullText = textNodes.map(function (n) {
+      return n.textContent || "";
+    }).join("");
+    var targets = [];
+    var indexToNodeOffset = function indexToNodeOffset(index) {
+      if (!textNodes.length) return {
+        node: null,
+        offset: 0
+      };
+      for (var i = 0; i < textNodes.length; i++) {
+        var start = offsets[i];
+        var end = start + (textNodes[i].textContent || "").length;
+        // Halb-offene Intervalle [start, end)
+        if (index >= start && index < end) {
+          return {
+            node: textNodes[i],
+            offset: index - start
+          };
+        }
+      }
+      // Falls wir genau am Ende landen, auf das Ende des letzten Knotens mappen
+      var lastNode = textNodes[textNodes.length - 1];
+      return {
+        node: lastNode,
+        offset: (lastNode.textContent || "").length
+      };
+    };
+    var createRangeFromIndexes = function createRangeFromIndexes(startIndex, endIndex) {
+      var startPos = indexToNodeOffset(startIndex);
+      var endPos = indexToNodeOffset(endIndex);
+      if (!startPos.node || !endPos.node) return null;
+      var r = document.createRange();
+      r.setStart(startPos.node, startPos.offset);
+      r.setEnd(endPos.node, endPos.offset);
+      return r;
+    };
+    EQUATION_REGEX.lastIndex = 0;
+    var match;
+    while ((match = EQUATION_REGEX.exec(fullText)) !== null) {
+      var allStart = match.index;
+      var allEnd = allStart + match[0].length; // inklusive ${...}$
+
+      var leftStart = allStart;
+      var leftEnd = allStart + OPEN_DELIM.length;
+      var rightEnd = allEnd;
+      var rightStart = rightEnd - CLOSE_DELIM.length;
+      var innerStart = leftEnd;
+      var innerEnd = rightStart;
+      var innerRange = createRangeFromIndexes(innerStart, innerEnd);
+      var leftRange = createRangeFromIndexes(leftStart, leftEnd);
+      var rightRange = createRangeFromIndexes(rightStart, rightEnd);
+      if (!innerRange || !leftRange || !rightRange) continue;
+      targets.push({
+        inner: innerRange,
+        left: leftRange,
+        right: rightRange
+      });
+    }
+    return targets;
+  };
+  var highlightCurrentEquation = function highlightCurrentEquation() {
+    if (!equationTargets.length) return;
+    if (equationIndex < 0 || equationIndex >= equationTargets.length) return;
+    var sel = window.getSelection();
+    if (!sel) return;
+    sel.removeAllRanges();
+    sel.addRange(equationTargets[equationIndex].inner);
+  };
+  var deleteDelimitersAndAdvance = function deleteDelimitersAndAdvance() {
+    if (!equationTargets.length) return;
+    var current = equationTargets[equationIndex];
+    if (!current) return;
+    deleteRangeSafely(current.right);
+    deleteRangeSafely(current.left);
+    var root = currentEditableRoot || getCurrentEditableRoot();
+    if (!root) {
+      equationTargets = [];
+      equationIndex = 0;
+      return;
+    }
+    equationTargets = collectEquationRanges(root);
+    if (!equationTargets.length) {
+      equationTargets = [];
+      equationIndex = 0;
+      return;
+    }
+    if (equationIndex >= equationTargets.length) {
+      equationIndex = equationTargets.length - 1;
+    }
+    highlightCurrentEquation();
+  };
+
+  // Nach normalem Paste (Strg/Cmd+V) alle ${...}$ im aktuellen Block einsammeln
+  document.addEventListener("paste", function () {
+    setTimeout(function () {
+      var root = getCurrentEditableRoot();
+      if (!root) return;
+      currentEditableRoot = root;
+      equationTargets = collectEquationRanges(root);
+      if (!equationTargets.length) {
+        equationTargets = [];
+        equationIndex = 0;
+        return;
+      }
+      equationIndex = 0;
+      highlightCurrentEquation();
+    }, 50);
+  });
+
+  // F2: Delimiter der aktuellen Formel löschen und zur nächsten springen
+  // Cmd/Ctrl+Shift+E: Notions Equation-Shortcut rendert, danach löschen wir die Delimiter derselben Formel.
+  document.addEventListener("keydown", function (e) {
+    if (!equationTargets.length) return;
+    if (e.key === "F2") {
+      e.preventDefault();
+      deleteDelimitersAndAdvance();
+      return;
+    }
+    var isCmdOrCtrl = e.metaKey || e.ctrlKey;
+    var isShift = e.shiftKey;
+    var isE = e.key === "e" || e.key === "E" || e.code === "KeyE";
+    if (isCmdOrCtrl && isShift && isE) {
+      // Notion soll den Shortcut ganz normal ausführen
+      setTimeout(function () {
+        deleteDelimitersAndAdvance();
+      }, 0);
+    }
+  });
+}
 /******/ })()
 ;
 //# sourceMappingURL=content.js.map
