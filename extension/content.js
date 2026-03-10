@@ -248,20 +248,27 @@ if (isChatGptHost) {
 }
 
 /**
- * Sets up equation navigation on Notion:
- * - After paste, all ${...}$ segments in the active contenteditable root are collected.
- * - F2 removes the delimiters of the current equation and selects the next one.
- * - Cmd/Ctrl+Shift+E lets Notion render the selection, then removes the delimiters and advances.
+ * Sets up equation handling on Notion.
+ *
+ * Behavior:
+ * - After paste, all ${...}$ segments in the active contenteditable root are collected and
+ *   the first equation's inner content is selected.
+ * - Pressing F2 on Notion:
+ *   1) selects the inner content of the current equation
+ *   2) removes the ${ and }$ delimiters in plain text
+ *   3) collects remaining equations and selects the next one, if any
+ *
+ * Rendering stays with Notion's own shortcut (Cmd/Ctrl+Shift+E) on the currently
+ * selected inner content.
  */
 if (isNotionHost) {
   var equationTargets = [];
   var equationIndex = 0;
   var currentEditableRoot = null;
 
-  // Asymmetrische Delimiter für Formeln: ${ ... }$
+  // Asymmetric delimiters for equations: ${ ... }$
   var OPEN_DELIM = "${";
   var CLOSE_DELIM = "}$";
-  var EQUATION_REGEX = /\$\{([\s\S]*?)\}\$/g;
   var getCurrentEditableRoot = function getCurrentEditableRoot() {
     var el = document.activeElement;
     while (el && !el.isContentEditable) {
@@ -294,9 +301,17 @@ if (isNotionHost) {
     sel.removeAllRanges();
   };
 
-  // Sammelt Ranges für alle ${...}$-Vorkommen, auch wenn sie sich über mehrere
-  // Textknoten erstrecken. Für jede Formel werden drei Ranges geliefert:
-  // inner (nur Inhalt), left (linkes "${") und right (rechtes "}$").
+  /**
+   * Collects ranges for all ${...}$ occurrences in document order, even when they
+   * span multiple text nodes.
+   * For each equation three ranges are returned:
+   * - inner: only the LaTeX content
+   * - left: the opening "${"
+   * - right: the closing "}$"
+   *
+   * Delimiter pairing is done with a small deterministic scanner instead of regex:
+   * "${" pushes onto a stack, "}$" closes the most recent open delimiter.
+   */
   var collectEquationRanges = function collectEquationRanges(root) {
     var textNodes = [];
     var offsets = [];
@@ -346,22 +361,42 @@ if (isNotionHost) {
       r.setEnd(endPos.node, endPos.offset);
       return r;
     };
-    EQUATION_REGEX.lastIndex = 0;
-    var match;
-    while ((match = EQUATION_REGEX.exec(fullText)) !== null) {
-      var allStart = match.index;
-      var allEnd = allStart + match[0].length; // inklusive ${...}$
 
-      var leftStart = allStart;
-      var leftEnd = allStart + OPEN_DELIM.length;
-      var rightEnd = allEnd;
+    // Deterministic scan for "${" and "}$" across the flattened text.
+    var openStack = [];
+    var pairs = [];
+    for (var i = 0; i < fullText.length - 1; i++) {
+      var two = fullText[i] + fullText[i + 1];
+      if (two === OPEN_DELIM) {
+        openStack.push(i);
+        i += 1; // skip second char of OPEN_DELIM
+      } else if (two === CLOSE_DELIM && openStack.length) {
+        var startIndex = openStack.pop();
+        var endIndex = i + CLOSE_DELIM.length;
+        pairs.push({
+          startIndex: startIndex,
+          endIndex: endIndex
+        });
+        i += 1; // skip second char of CLOSE_DELIM
+      }
+    }
+
+    for (var _i2 = 0, _pairs = pairs; _i2 < _pairs.length; _i2++) {
+      var _pairs$_i = _pairs[_i2],
+        _startIndex = _pairs$_i.startIndex,
+        _endIndex = _pairs$_i.endIndex;
+      var leftStart = _startIndex;
+      var leftEnd = _startIndex + OPEN_DELIM.length;
+      var rightEnd = _endIndex;
       var rightStart = rightEnd - CLOSE_DELIM.length;
       var innerStart = leftEnd;
       var innerEnd = rightStart;
       var innerRange = createRangeFromIndexes(innerStart, innerEnd);
       var leftRange = createRangeFromIndexes(leftStart, leftEnd);
       var rightRange = createRangeFromIndexes(rightStart, rightEnd);
-      if (!innerRange || !leftRange || !rightRange) continue;
+      if (!innerRange || !leftRange || !rightRange) {
+        continue;
+      }
       targets.push({
         inner: innerRange,
         left: leftRange,
@@ -379,9 +414,28 @@ if (isNotionHost) {
     sel.addRange(equationTargets[equationIndex].inner);
   };
   var deleteDelimitersAndAdvance = function deleteDelimitersAndAdvance() {
-    if (!equationTargets.length) return;
+    if (!equationTargets.length) {
+      var _root = getCurrentEditableRoot();
+      if (!_root) return;
+      currentEditableRoot = _root;
+      equationTargets = collectEquationRanges(_root);
+      equationIndex = 0;
+    }
+    if (!equationTargets.length) {
+      equationTargets = [];
+      equationIndex = 0;
+      return;
+    }
+    if (equationIndex < 0 || equationIndex >= equationTargets.length) {
+      equationIndex = 0;
+    }
     var current = equationTargets[equationIndex];
     if (!current) return;
+
+    // Select inner content so the user can render with Notion's shortcut.
+    highlightCurrentEquation();
+
+    // Remove delimiters of the current equation from the plain text.
     deleteRangeSafely(current.right);
     deleteRangeSafely(current.left);
     var root = currentEditableRoot || getCurrentEditableRoot();
@@ -402,7 +456,7 @@ if (isNotionHost) {
     highlightCurrentEquation();
   };
 
-  // Nach normalem Paste (Strg/Cmd+V) alle ${...}$ im aktuellen Block einsammeln
+  // After a normal paste (Cmd/Ctrl+V), collect all ${...}$ segments in the current block.
   document.addEventListener("paste", function () {
     setTimeout(function () {
       var root = getCurrentEditableRoot();
@@ -418,24 +472,10 @@ if (isNotionHost) {
       highlightCurrentEquation();
     }, 50);
   });
-
-  // F2: Delimiter der aktuellen Formel löschen und zur nächsten springen
-  // Cmd/Ctrl+Shift+E: Notions Equation-Shortcut rendert, danach löschen wir die Delimiter derselben Formel.
   document.addEventListener("keydown", function (e) {
-    if (!equationTargets.length) return;
     if (e.key === "F2") {
       e.preventDefault();
       deleteDelimitersAndAdvance();
-      return;
-    }
-    var isCmdOrCtrl = e.metaKey || e.ctrlKey;
-    var isShift = e.shiftKey;
-    var isE = e.key === "e" || e.key === "E" || e.code === "KeyE";
-    if (isCmdOrCtrl && isShift && isE) {
-      // Notion soll den Shortcut ganz normal ausführen
-      setTimeout(function () {
-        deleteDelimitersAndAdvance();
-      }, 0);
     }
   });
 }
