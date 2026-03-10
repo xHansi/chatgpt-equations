@@ -24,7 +24,7 @@ class NotionCopyGPT {
   /**
    * Walks a fragment/node tree in document order and builds a Notion-friendly string.
    * - Plain text is kept with spaces normalized.
-   * - KaTeX equations become ${latex}$.
+   * - KaTeX equations become $<latex>$.
    * - Basic structure (headings, paragraphs, list items, line breaks) is preserved
    *   using lightweight Markdown-style formatting so Notion keeps the layout.
    */
@@ -39,12 +39,12 @@ class NotionCopyGPT {
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node;
 
-      // KaTeX equation: wrap original LaTeX in ${...}$ for the Notion workflow.
+      // KaTeX equation: wrap original LaTeX in $<...>$ for the Notion workflow.
       if (el.classList && el.classList.contains("katex")) {
         const annotation = el.querySelector(".katex-mathml annotation");
         const raw = annotation ? annotation.innerHTML : "";
         const latex = this.decodeLatexFromAnnotation(raw);
-        return latex ? `${'${'}${latex}}$` : "";
+        return latex ? `$<${latex}>$` : "";
       }
 
       const tag = el.tagName;
@@ -99,7 +99,7 @@ class NotionCopyGPT {
 
   /**
    * Builds a single string for Notion from the current selection.
-   * Keeps equations as ${latex}$ segments and preserves basic layout
+   * Keeps equations as $<latex>$ segments and preserves basic layout
    * (headings, paragraphs, lists).
    */
   getNotionFormatFromSelection(selection) {
@@ -107,9 +107,19 @@ class NotionCopyGPT {
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const raw = this.getNotionFormatFromFragment(fragment);
-    const normalized = (raw || "")
+    let normalized = (raw || "")
       .replace(/[ \t]+/g, " ")
       .replace(/\n{3,}/g, "\n\n");
+
+    // For block equations copied from ChatGPT we want an extra blank line
+    // after each standalone $<...>$ line so that Notion creates a separate
+    // block. A "standalone" equation is a line whose non-whitespace content
+    // consists only of a single $<...>$.
+    normalized = normalized.replace(
+      /(^|\n)(\s*\$<[^\n]*>\$\s*)(\n)(?!\n)/g,
+      "$1$2$3\n"
+    );
+
     return normalized.trim();
   }
 
@@ -250,9 +260,9 @@ if (isNotionHost) {
   let equationIndex = 0;
   let currentEditableRoot = null;
 
-  // Asymmetric delimiters for equations: ${ ... }$
-  const OPEN_DELIM = "${";
-  const CLOSE_DELIM = "}$";
+  // Asymmetric delimiters for equations: $< ... >$
+  const OPEN_DELIM = "$<";
+  const CLOSE_DELIM = ">$";
 
   const getCurrentEditableRoot = () => {
     let el = document.activeElement;
@@ -295,15 +305,15 @@ if (isNotionHost) {
   };
 
   /**
-   * Collects ranges for all ${...}$ occurrences in document order, even when they
+   * Collects ranges for all $<...>$ occurrences in document order, even when they
    * span multiple text nodes.
    * For each equation three ranges are returned:
    * - inner: only the LaTeX content
-   * - left: the opening "${"
-   * - right: the closing "}$"
+   * - left: the opening "$<"
+   * - right: the closing ">$"
    *
    * Delimiter pairing is done with a small deterministic scanner instead of regex:
-   * "${" pushes onto a stack, "}$" closes the most recent open delimiter.
+   * "$<" pushes onto a stack, ">$" closes the most recent open delimiter.
    */
   const collectEquationRanges = (root) => {
     const textNodes = [];
@@ -405,6 +415,18 @@ if (isNotionHost) {
     sel.addRange(equationTargets[equationIndex].inner);
   };
 
+  const highlightNextEquation = () => {
+    if (!equationTargets.length) return;
+
+    // Move to next equation (cyclic)
+    if (equationIndex < equationTargets.length - 1) {
+      equationIndex += 1;
+    } else {
+      equationIndex = 0;
+    }
+    highlightCurrentEquation();
+  };
+
   const deleteDelimitersAndAdvance = () => {
     if (!equationTargets.length) {
       const root = getCurrentEditableRoot();
@@ -427,9 +449,6 @@ if (isNotionHost) {
     const current = equationTargets[equationIndex];
     if (!current) return;
 
-    // Select inner content so the user can render with Notion's shortcut.
-    highlightCurrentEquation();
-
     // Remove delimiters of the current equation from the plain text.
     deleteRangeSafely(current.right);
     deleteRangeSafely(current.left);
@@ -451,7 +470,7 @@ if (isNotionHost) {
     if (equationIndex >= equationTargets.length) {
       equationIndex = equationTargets.length - 1;
     }
-    highlightCurrentEquation();
+    highlightNextEquation();
   };
 
   // After a normal paste (Cmd/Ctrl+V), collect all ${...}$ segments in the current block.
@@ -474,6 +493,21 @@ if (isNotionHost) {
   document.addEventListener("keydown", (e) => {
     if (e.key === "F2") {
       e.preventDefault();
+      // F2: only highlight and walk through equations, do not delete delimiters.
+      if (!equationTargets.length) {
+        const root = getCurrentEditableRoot();
+        if (!root) return;
+        currentEditableRoot = root;
+        equationTargets = collectEquationRanges(root);
+        equationIndex = 0;
+      }
+      if (!equationTargets.length) return;
+      highlightNextEquation();
+    }
+
+    if (e.key === "F3") {
+      e.preventDefault();
+      // F3: delete delimiters of current equation and advance.
       deleteDelimitersAndAdvance();
     }
   });
