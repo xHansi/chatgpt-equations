@@ -18937,24 +18937,36 @@ var KatexGPT = /*#__PURE__*/function () {
           out += this.getNotionFormatFromFragment(el.childNodes[i]);
         }
 
+        // Bold / strong text -> Markdown **bold**
+        if (tag === "B" || tag === "STRONG") {
+          var inner = out.trim();
+          return inner ? "**".concat(inner, "**") : "";
+        }
+
+        // Italic / emphasis -> Markdown *italic*
+        if (tag === "I" || tag === "EM") {
+          var _inner = out.trim();
+          return _inner ? "*".concat(_inner, "*") : "";
+        }
+
         // Headings: map to Markdown-style so Notion can convert on paste
         if (tag && /^H[1-6]$/.test(tag)) {
           var level = parseInt(tag.substring(1), 10) || 1;
           var hashes = "#".repeat(Math.min(level, 3));
-          var inner = out.trim();
-          return inner ? "".concat(hashes, " ").concat(inner, "\n\n") : "";
+          var _inner2 = out.trim();
+          return _inner2 ? "".concat(hashes, " ").concat(_inner2, "\n\n") : "";
         }
 
         // List items: prefix with "- "
         if (tag === "LI") {
-          var _inner = out.trim();
-          return _inner ? "- ".concat(_inner, "\n") : "";
+          var _inner3 = out.trim();
+          return _inner3 ? "- ".concat(_inner3, "\n") : "";
         }
 
         // Paragraph-like blocks: add blank line after
         if (tag === "P" || tag === "DIV" || tag === "SECTION" || tag === "ARTICLE") {
-          var _inner2 = out.trim();
-          return _inner2 ? "".concat(_inner2, "\n\n") : "";
+          var _inner4 = out.trim();
+          return _inner4 ? "".concat(_inner4, "\n\n") : "";
         }
 
         // Default: just return concatenated children

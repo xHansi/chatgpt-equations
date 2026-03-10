@@ -83,6 +83,18 @@ class KatexGPT {
         out += this.getNotionFormatFromFragment(el.childNodes[i]);
       }
 
+      // Bold / strong text -> Markdown **bold**
+      if (tag === "B" || tag === "STRONG") {
+        const inner = out.trim();
+        return inner ? `**${inner}**` : "";
+      }
+
+      // Italic / emphasis -> Markdown *italic*
+      if (tag === "I" || tag === "EM") {
+        const inner = out.trim();
+        return inner ? `*${inner}*` : "";
+      }
+
       // Headings: map to Markdown-style so Notion can convert on paste
       if (tag && /^H[1-6]$/.test(tag)) {
         const level = parseInt(tag.substring(1), 10) || 1;
