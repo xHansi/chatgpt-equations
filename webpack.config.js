@@ -3,19 +3,22 @@ const path = require("path");
 const TerserPlugin = require("terser-webpack-plugin");
 
 const config = {
-  entry: "./src/bootstrap.ts",
+  entry: {
+    content: "./src/bootstrap.ts",
+    popup: "./src/popup/index.tsx",
+  },
   output: {
     path: path.resolve(__dirname, "extension"),
-    filename: "content.js",
+    filename: "[name].js",
   },
   devtool: "cheap-module-source-map",
   resolve: {
-    extensions: [".ts", ".js"],
+    extensions: [".ts", ".tsx", ".js", ".jsx"],
   },
   module: {
     rules: [
       {
-        test: /\.(ts|js)$/,
+        test: /\.[jt]sx?$/,
         use: "babel-loader",
         exclude: /node_modules/,
       },

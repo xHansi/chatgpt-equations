@@ -666,12 +666,58 @@ __webpack_require__.r(__webpack_exports__);
 
 var isChatGptHost = location.host.includes("chat.openai.com") || location.host.includes("chatgpt.com");
 var isNotionHost = location.host.includes("notion.so") || location.host.includes("notion.site");
-if (isChatGptHost) {
-  (0,_content_chatgptContent__WEBPACK_IMPORTED_MODULE_0__.initChatGptContent)();
+var STORAGE_KEY = "gptEqDomains";
+
+/**
+ * Load domain configuration from chrome.storage.local, falling back to defaults.
+ * @returns {Promise<Array<{ domain: string; enabled: boolean }>>}
+ */
+function loadDomainConfig() {
+  var DEFAULT_DOMAINS = [{
+    domain: "chat.openai.com",
+    enabled: true
+  }, {
+    domain: "chatgpt.com",
+    enabled: true
+  }, {
+    domain: "gemini.google.com",
+    enabled: true
+  }, {
+    domain: "perplexity.ai",
+    enabled: true
+  }];
+  return new Promise(function (resolve) {
+    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
+      resolve(DEFAULT_DOMAINS);
+      return;
+    }
+    chrome.storage.local.get(STORAGE_KEY, function (data) {
+      var list = data && data[STORAGE_KEY];
+      if (!list || !Array.isArray(list) || list.length === 0) {
+        resolve(DEFAULT_DOMAINS);
+      } else {
+        resolve(list);
+      }
+    });
+  });
 }
-if (isNotionHost) {
-  (0,_content_notionContent__WEBPACK_IMPORTED_MODULE_1__.initNotionContent)();
-}
+loadDomainConfig().then(function (domains) {
+  if (isChatGptHost) {
+    var host = location.host;
+    var match = domains.find(function (d) {
+      return d.domain === host && d.enabled;
+    });
+    if (match) {
+      (0,_content_chatgptContent__WEBPACK_IMPORTED_MODULE_0__.initChatGptContent)();
+    }
+  }
+
+  // Notion-Verhalten bleibt immer aktiv; die Domain-Liste steuert nur die
+  // Hosts, auf denen ChatGPT-/LLM-Inhalte verarbeitet werden.
+  if (isNotionHost) {
+    (0,_content_notionContent__WEBPACK_IMPORTED_MODULE_1__.initNotionContent)();
+  }
+});
 })();
 
 /******/ })()
