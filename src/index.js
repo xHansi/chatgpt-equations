@@ -45,42 +45,90 @@ class KatexGPT {
     return (div.textContent || div.innerText || "").trim();
   }
 
-  /** Walk a fragment/node tree in document order; build Notion string (text + $$latex$$) */
+  /** Walk a fragment/node tree in document order; build Notion string.
+   * - Plain text is kept with spaces normalized.
+   * - KaTeX equations become $$latex$ (one trailing $) so that after paste in Notion,
+   *   typing the final $ triggers rendering.
+   * - Basic structure (headings, paragraphs, list items, line breaks) is preserved
+   *   using Markdown-like formatting so Notion can keep layout. */
   getNotionFormatFromFragment(node) {
     let out = "";
     if (!node) return out;
+
+    // Text: collapse spaces/tabs but let structural newlines be added by elements
     if (node.nodeType === Node.TEXT_NODE) {
-      return (node.textContent || "").replace(/\s+/g, " ");
+      return (node.textContent || "").replace(/[ \t]+/g, " ");
     }
+
     if (node.nodeType === Node.ELEMENT_NODE) {
       const el = node;
+
+      // KaTeX equation: use $$latex$ so typing final $ in Notion converts it
       if (el.classList && el.classList.contains("katex")) {
         const annotation = el.querySelector(".katex-mathml annotation");
         const raw = annotation ? annotation.innerHTML : "";
         const latex = this.decodeLatexFromAnnotation(raw);
-        return latex ? `$$${latex}$$` : "";
+        return latex ? `$$${latex}$` : "";
       }
+
+      const tag = el.tagName;
+
+      // Explicit line break
+      if (tag === "BR") {
+        return "\n";
+      }
+
+      // Recursively collect children
       for (let i = 0; i < el.childNodes.length; i++) {
         out += this.getNotionFormatFromFragment(el.childNodes[i]);
       }
+
+      // Headings: map to Markdown-style so Notion can convert on paste
+      if (tag && /^H[1-6]$/.test(tag)) {
+        const level = parseInt(tag.substring(1), 10) || 1;
+        const hashes = "#".repeat(Math.min(level, 3));
+        const inner = out.trim();
+        return inner ? `${hashes} ${inner}\n\n` : "";
+      }
+
+      // List items: prefix with "- "
+      if (tag === "LI") {
+        const inner = out.trim();
+        return inner ? `- ${inner}\n` : "";
+      }
+
+      // Paragraph-like blocks: add blank line after
+      if (tag === "P" || tag === "DIV" || tag === "SECTION" || tag === "ARTICLE") {
+        const inner = out.trim();
+        return inner ? `${inner}\n\n` : "";
+      }
+
+      // Default: just return concatenated children
       return out;
     }
+
     // DocumentFragment (e.g. from range.cloneContents()) — walk its children
     if (node.nodeType === Node.DOCUMENT_FRAGMENT_NODE) {
       for (let i = 0; i < node.childNodes.length; i++) {
         out += this.getNotionFormatFromFragment(node.childNodes[i]);
       }
     }
+
     return out;
   }
 
-  /** Build a single string for Notion from the current selection (plain text + $$latex$$ segments) */
+  /** Build a single string for Notion from the current selection.
+   * Keeps equations as $$latex$ segments and preserves basic layout (headings, paragraphs, lists). */
   getNotionFormatFromSelection(selection) {
     if (!selection || selection.rangeCount === 0) return "";
     const range = selection.getRangeAt(0);
     const fragment = range.cloneContents();
     const raw = this.getNotionFormatFromFragment(fragment);
-    return raw.replace(/\s+/g, " ").trim();
+    // Normalize spaces but preserve newlines that encode structure
+    const normalized = (raw || "")
+      .replace(/[ \t]+/g, " ")
+      .replace(/\n{3,}/g, "\n\n");
+    return normalized.trim();
   }
 
   /** Copy text to clipboard; use execCommand fallback if clipboard API fails (e.g. in some iframes) */
