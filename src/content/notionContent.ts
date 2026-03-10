@@ -17,6 +17,30 @@ export function initNotionContent(): void {
 
   const collectRangesForRoot = (root) => collectEquationRanges(root);
 
+  const pickEquationIndexNearCaret = () => {
+    if (!equationTargets.length) return 0;
+    const sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return 0;
+    const caretRange = sel.getRangeAt(0);
+
+    // Prefer the first equation whose inner range ends at or after the caret.
+    for (let i = 0; i < equationTargets.length; i++) {
+      const eqRange = equationTargets[i].inner;
+      try {
+        const cmp = caretRange.compareBoundaryPoints(Range.START_TO_END, eqRange);
+        if (cmp <= 0) {
+          return i;
+        }
+      } catch {
+        // If compareBoundaryPoints fails for some reason, fall back to the first equation.
+        return 0;
+      }
+    }
+
+    // If caret is after all equations, start at the last one.
+    return equationTargets.length - 1;
+  };
+
   const highlightCurrentEquation = () => {
     if (!equationTargets.length) return;
     if (equationIndex < 0 || equationIndex >= equationTargets.length) return;
@@ -44,7 +68,7 @@ export function initNotionContent(): void {
       if (!root) return;
       currentEditableRoot = root;
       equationTargets = collectRangesForRoot(root);
-      equationIndex = 0;
+      equationIndex = pickEquationIndexNearCaret();
     }
 
     if (!equationTargets.length) {
@@ -96,7 +120,7 @@ export function initNotionContent(): void {
         equationIndex = 0;
         return;
       }
-      equationIndex = 0;
+      equationIndex = pickEquationIndexNearCaret();
       highlightCurrentEquation();
     }, 50);
   });
@@ -104,16 +128,18 @@ export function initNotionContent(): void {
   document.addEventListener("keydown", (e) => {
     if (e.key === "F2") {
       e.preventDefault();
-      // F2: only highlight and walk through equations, do not delete delimiters.
+      // F2: highlight equation near caret, then walk forward with subsequent presses.
+      const root = getCurrentEditableRoot();
+      if (!root) return;
+      currentEditableRoot = root;
+      equationTargets = collectRangesForRoot(root);
       if (!equationTargets.length) {
-        const root = getCurrentEditableRoot();
-        if (!root) return;
-        currentEditableRoot = root;
-        equationTargets = collectRangesForRoot(root);
+        equationTargets = [];
         equationIndex = 0;
+        return;
       }
-      if (!equationTargets.length) return;
-      highlightNextEquation();
+      equationIndex = pickEquationIndexNearCaret();
+      highlightCurrentEquation();
     }
 
     if (e.key === "F3") {

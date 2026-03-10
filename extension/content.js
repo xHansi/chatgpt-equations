@@ -159,6 +159,29 @@ function initNotionContent() {
   var collectRangesForRoot = function collectRangesForRoot(root) {
     return (0,_core_equations__WEBPACK_IMPORTED_MODULE_0__.collectEquationRanges)(root);
   };
+  var pickEquationIndexNearCaret = function pickEquationIndexNearCaret() {
+    if (!equationTargets.length) return 0;
+    var sel = window.getSelection();
+    if (!sel || sel.rangeCount === 0) return 0;
+    var caretRange = sel.getRangeAt(0);
+
+    // Prefer the first equation whose inner range ends at or after the caret.
+    for (var i = 0; i < equationTargets.length; i++) {
+      var eqRange = equationTargets[i].inner;
+      try {
+        var cmp = caretRange.compareBoundaryPoints(Range.START_TO_END, eqRange);
+        if (cmp <= 0) {
+          return i;
+        }
+      } catch (_unused) {
+        // If compareBoundaryPoints fails for some reason, fall back to the first equation.
+        return 0;
+      }
+    }
+
+    // If caret is after all equations, start at the last one.
+    return equationTargets.length - 1;
+  };
   var highlightCurrentEquation = function highlightCurrentEquation() {
     if (!equationTargets.length) return;
     if (equationIndex < 0 || equationIndex >= equationTargets.length) return;
@@ -184,7 +207,7 @@ function initNotionContent() {
       if (!_root) return;
       currentEditableRoot = _root;
       equationTargets = collectRangesForRoot(_root);
-      equationIndex = 0;
+      equationIndex = pickEquationIndexNearCaret();
     }
     if (!equationTargets.length) {
       equationTargets = [];
@@ -230,23 +253,25 @@ function initNotionContent() {
         equationIndex = 0;
         return;
       }
-      equationIndex = 0;
+      equationIndex = pickEquationIndexNearCaret();
       highlightCurrentEquation();
     }, 50);
   });
   document.addEventListener("keydown", function (e) {
     if (e.key === "F2") {
       e.preventDefault();
-      // F2: only highlight and walk through equations, do not delete delimiters.
+      // F2: highlight equation near caret, then walk forward with subsequent presses.
+      var root = getCurrentEditableRoot();
+      if (!root) return;
+      currentEditableRoot = root;
+      equationTargets = collectRangesForRoot(root);
       if (!equationTargets.length) {
-        var root = getCurrentEditableRoot();
-        if (!root) return;
-        currentEditableRoot = root;
-        equationTargets = collectRangesForRoot(root);
+        equationTargets = [];
         equationIndex = 0;
+        return;
       }
-      if (!equationTargets.length) return;
-      highlightNextEquation();
+      equationIndex = pickEquationIndexNearCaret();
+      highlightCurrentEquation();
     }
     if (e.key === "F3") {
       e.preventDefault();
