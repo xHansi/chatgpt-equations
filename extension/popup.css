@@ -106,6 +106,25 @@ body {
   height: 18px;
 }
 
+.popup-notion-logo {
+  width: 16px;
+  height: 16px;
+}
+
+.popup-notion-text {
+  font-weight: 600;
+}
+
+.popup-main-logo {
+  height: 20px;
+  width: auto;
+  display: block;
+}
+
+.popup-title-text {
+  font-size: 13px;
+}
+
 .popup-section {
   background: #ffffff;
   border-radius: 8px;

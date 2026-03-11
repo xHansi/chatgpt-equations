@@ -1,21 +1,21 @@
 {
   "manifest_version": 3,
-  "name": "ChatGPT → Notion Math Copy",
-  "description": "Copy ChatGPT responses (text + LaTeX) in a format that pastes cleanly into Notion.",
+  "name": "LLM to Notion",
+  "description": "Copy LLM responses with math equations (text + LaTeX) in a format that pastes cleanly into Notion.",
   "version": "0.1.0",
   "permissions": ["storage"],
   "icons": {
-    "16": "images/icon.png",
-    "32": "images/icon.png",
-    "48": "images/icon.png",
-    "128": "images/icon.png"
+    "16": "images/llm-to-notion.png",
+    "32": "images/llm-to-notion.png",
+    "48": "images/llm-to-notion.png",
+    "128": "images/llm-to-notion.png"
   },
   "action": {
     "default_popup": "popup.html",
     "default_icon": {
-      "16": "images/icon.png",
-      "32": "images/icon.png",
-      "48": "images/icon.png"
+      "16": "images/llm-to-notion.png",
+      "32": "images/llm-to-notion.png",
+      "48": "images/llm-to-notion.png"
     }
   },
   "content_scripts": [

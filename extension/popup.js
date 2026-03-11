@@ -49,11 +49,11 @@ var LANGUAGES = {
 };
 var translations = {
   title: {
-    en: "ChatGPT → Notion Math",
-    de: "ChatGPT → Notion Mathe",
-    es: "ChatGPT → Notion Matemáticas",
-    it: "ChatGPT → Notion Matematica",
-    fr: "ChatGPT → Notion Math"
+    en: "LLM → Notion",
+    de: "LLM → Notion",
+    es: "LLM → Notion",
+    it: "LLM → Notion",
+    fr: "LLM → Notion"
   },
   domainsTitle: {
     en: "Domains",
@@ -32898,10 +32898,11 @@ var PopupApp = function PopupApp() {
       children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         className: "popup-title",
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
-          src: "images/icon-t.png",
-          className: "popup-logo",
-          alt: ""
+          src: "images/llm-to-notion.png",
+          className: "popup-main-logo",
+          alt: "LLM to Notion"
         }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+          className: "popup-title-text",
           children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("title", language)
         })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {

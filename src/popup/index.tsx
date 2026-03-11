@@ -176,8 +176,12 @@ const PopupApp: React.FC = () => {
     <div className="popup-root">
       <header className="popup-header">
         <div className="popup-title">
-          <img src="images/icon-t.png" className="popup-logo" alt="" />
-          <span>{t("title", language)}</span>
+          <img
+            src="images/llm-to-notion.png"
+            className="popup-main-logo"
+            alt="LLM to Notion"
+          />
+          <span className="popup-title-text">{t("title", language)}</span>
         </div>
         <div className="lang-switcher-wrapper">
           <button

@@ -34,11 +34,11 @@ type TranslationKey =
 
 const translations: Record<TranslationKey, Record<SupportedLanguage, string>> = {
   title: {
-    en: "ChatGPT → Notion Math",
-    de: "ChatGPT → Notion Mathe",
-    es: "ChatGPT → Notion Matemáticas",
-    it: "ChatGPT → Notion Matematica",
-    fr: "ChatGPT → Notion Math",
+    en: "LLM → Notion",
+    de: "LLM → Notion",
+    es: "LLM → Notion",
+    it: "LLM → Notion",
+    fr: "LLM → Notion",
   },
   domainsTitle: {
     en: "Domains",
