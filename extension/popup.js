@@ -32546,6 +32546,10 @@ var PopupApp = function PopupApp() {
     _useState4 = _slicedToArray(_useState3, 2),
     inputValue = _useState4[0],
     setInputValue = _useState4[1];
+  var _useState5 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(null),
+    _useState6 = _slicedToArray(_useState5, 2),
+    pendingDeleteIndex = _useState6[0],
+    setPendingDeleteIndex = _useState6[1];
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     void _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
       var list;
@@ -32612,6 +32616,13 @@ var PopupApp = function PopupApp() {
     });
     void persist(next);
   }, [domains, persist]);
+  var pendingDomain = pendingDeleteIndex !== null ? domains[pendingDeleteIndex] : null;
+  var formatProviderLabel = function formatProviderLabel(provider) {
+    if (provider === "generic") {
+      return "generic (experimental)";
+    }
+    return provider;
+  };
   var openUrl = function openUrl(url) {
     if (typeof chrome !== "undefined" && chrome.tabs) {
       chrome.tabs.create({
@@ -32637,9 +32648,19 @@ var PopupApp = function PopupApp() {
       })
     }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("section", {
       className: "popup-section",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h2", {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("h2", {
         className: "section-title",
-        children: "Domains"
+        children: ["Domains", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("button", {
+          type: "button",
+          className: "info-icon heading-info",
+          "aria-label": "More info about generic domains",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_4__.FiInfo, {
+            className: "info-icon-svg"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+            className: "info-tooltip",
+            children: "Manually added domains use a generic integration and may not work perfectly on every site."
+          })]
+        })]
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
         className: "domain-input-row",
         children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
@@ -32670,7 +32691,7 @@ var PopupApp = function PopupApp() {
               className: "domain-label",
               children: [d.domain, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
                 className: "provider-badge",
-                children: d.provider
+                children: formatProviderLabel(d.provider)
               })]
             }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
               className: "domain-controls",
@@ -32684,7 +32705,7 @@ var PopupApp = function PopupApp() {
                 className: "trash-btn",
                 title: "Entfernen",
                 onClick: function onClick() {
-                  return handleDelete(i);
+                  return setPendingDeleteIndex(i);
                 },
                 children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_4__.FiTrash2, {})
               })]
@@ -32731,6 +32752,41 @@ var PopupApp = function PopupApp() {
           children: "Fragen / Hilfe"
         })]
       })]
+    }), pendingDomain && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+      className: "modal-backdrop",
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+        className: "modal-dialog",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h3", {
+          className: "modal-title",
+          children: "Remove domain?"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("p", {
+          className: "modal-text",
+          children: ["Are you sure you want to remove", " ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+            className: "modal-domain",
+            children: pendingDomain.domain
+          }), " from the list?"]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+          className: "modal-actions",
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+            type: "button",
+            className: "modal-btn secondary",
+            onClick: function onClick() {
+              return setPendingDeleteIndex(null);
+            },
+            children: "Cancel"
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+            type: "button",
+            className: "modal-btn danger",
+            onClick: function onClick() {
+              if (pendingDeleteIndex !== null) {
+                handleDelete(pendingDeleteIndex);
+              }
+              setPendingDeleteIndex(null);
+            },
+            children: "Delete"
+          })]
+        })]
+      })
     })]
   });
 };

@@ -1,6 +1,6 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { createRoot } from "react-dom/client";
-import { FiGithub, FiCoffee, FiHelpCircle, FiTrash2 } from "react-icons/fi";
+import { FiGithub, FiCoffee, FiHelpCircle, FiTrash2, FiInfo } from "react-icons/fi";
 import type { ProviderId, ProviderDomainConfig } from "../core/providers";
 import { getProviderForHost, withDefaultProvider, seedDefaultDomains } from "../core/providers";
 
@@ -84,6 +84,7 @@ const Switch: React.FC<{ checked: boolean; onChange: (v: boolean) => void }> = (
 const PopupApp: React.FC = () => {
   const [domains, setDomains] = useState<DomainConfig[]>([]);
   const [inputValue, setInputValue] = useState("");
+  const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
 
   useEffect(() => {
     void (async () => {
@@ -128,6 +129,15 @@ const PopupApp: React.FC = () => {
     [domains, persist]
   );
 
+  const pendingDomain = pendingDeleteIndex !== null ? domains[pendingDeleteIndex] : null;
+
+  const formatProviderLabel = (provider: ProviderId): string => {
+    if (provider === "generic") {
+      return "generic (experimental)";
+    }
+    return provider;
+  };
+
   const openUrl = (url: string) => {
     if (typeof chrome !== "undefined" && chrome.tabs) {
       chrome.tabs.create({ url });
@@ -146,7 +156,19 @@ const PopupApp: React.FC = () => {
       </header>
 
       <section className="popup-section">
-        <h2 className="section-title">Domains</h2>
+        <h2 className="section-title">
+          Domains
+          <button
+            type="button"
+            className="info-icon heading-info"
+            aria-label="More info about generic domains"
+          >
+            <FiInfo className="info-icon-svg" />
+            <span className="info-tooltip">
+              Manually added domains use a generic integration and may not work perfectly on every site.
+            </span>
+          </button>
+        </h2>
         <div className="domain-input-row">
           <input
             value={inputValue}
@@ -170,7 +192,7 @@ const PopupApp: React.FC = () => {
             <li key={d.domain} className="domain-item">
               <span className="domain-label">
                 {d.domain}
-                <span className="provider-badge">{d.provider}</span>
+                <span className="provider-badge">{formatProviderLabel(d.provider)}</span>
               </span>
               <div className="domain-controls">
                 <Switch
@@ -181,7 +203,7 @@ const PopupApp: React.FC = () => {
                   type="button"
                   className="trash-btn"
                   title="Entfernen"
-                  onClick={() => handleDelete(i)}
+                  onClick={() => setPendingDeleteIndex(i)}
                 >
                   <FiTrash2 />
                 </button>
@@ -223,6 +245,39 @@ const PopupApp: React.FC = () => {
           <span>Fragen / Hilfe</span>
         </button>
       </section>
+
+      {pendingDomain && (
+        <div className="modal-backdrop">
+          <div className="modal-dialog">
+            <h3 className="modal-title">Remove domain?</h3>
+            <p className="modal-text">
+              Are you sure you want to remove{" "}
+              <span className="modal-domain">{pendingDomain.domain}</span> from the list?
+            </p>
+            <div className="modal-actions">
+              <button
+                type="button"
+                className="modal-btn secondary"
+                onClick={() => setPendingDeleteIndex(null)}
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                className="modal-btn danger"
+                onClick={() => {
+                  if (pendingDeleteIndex !== null) {
+                    handleDelete(pendingDeleteIndex);
+                  }
+                  setPendingDeleteIndex(null);
+                }}
+              >
+                Delete
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
