@@ -2,6 +2,232 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
+/***/ "./src/core/i18n.ts":
+/*!**************************!*\
+  !*** ./src/core/i18n.ts ***!
+  \**************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "LANGUAGES": () => (/* binding */ LANGUAGES),
+/* harmony export */   "getDefaultLanguage": () => (/* binding */ getDefaultLanguage),
+/* harmony export */   "loadLanguage": () => (/* binding */ loadLanguage),
+/* harmony export */   "saveLanguage": () => (/* binding */ saveLanguage),
+/* harmony export */   "t": () => (/* binding */ t)
+/* harmony export */ });
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return _typeof(key) === "symbol" ? key : String(key); }
+function _toPrimitive(input, hint) { if (_typeof(input) !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (_typeof(res) !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
+var LANGUAGES = {
+  en: {
+    code: "EN",
+    flag: "🇺🇸",
+    label: "English"
+  },
+  de: {
+    code: "DE",
+    flag: "🇩🇪",
+    label: "Deutsch"
+  },
+  es: {
+    code: "ES",
+    flag: "🇪🇸",
+    label: "Español"
+  },
+  it: {
+    code: "IT",
+    flag: "🇮🇹",
+    label: "Italiano"
+  },
+  fr: {
+    code: "FR",
+    flag: "🇫🇷",
+    label: "Français"
+  }
+};
+var translations = {
+  title: {
+    en: "ChatGPT → Notion Math",
+    de: "ChatGPT → Notion Mathe",
+    es: "ChatGPT → Notion Matemáticas",
+    it: "ChatGPT → Notion Matematica",
+    fr: "ChatGPT → Notion Math"
+  },
+  domainsTitle: {
+    en: "Domains",
+    de: "Domains",
+    es: "Dominios",
+    it: "Domini",
+    fr: "Domaines"
+  },
+  domainPlaceholder: {
+    en: "e.g. chat.openai.com",
+    de: "z.B. chat.openai.com",
+    es: "p.ej. chat.openai.com",
+    it: "es. chat.openai.com",
+    fr: "ex. chat.openai.com"
+  },
+  addButton: {
+    en: "Add",
+    de: "Hinzufügen",
+    es: "Añadir",
+    it: "Aggiungi",
+    fr: "Ajouter"
+  },
+  trashTooltip: {
+    en: "Remove",
+    de: "Entfernen",
+    es: "Eliminar",
+    it: "Rimuovere",
+    fr: "Supprimer"
+  },
+  footerCoffee: {
+    en: "Buy me a coffee",
+    de: "Spendiere mir einen Kaffee",
+    es: "Invítame a un café",
+    it: "Offrimi un caffè",
+    fr: "Offrez-moi un café"
+  },
+  footerHelp: {
+    en: "Help / Questions",
+    de: "Hilfe / Fragen",
+    es: "Ayuda / Preguntas",
+    it: "Aiuto / Domande",
+    fr: "Aide / Questions"
+  },
+  footerGithub: {
+    en: "Contribute on GitHub",
+    de: "Auf GitHub beitragen",
+    es: "Contribuir en GitHub",
+    it: "Contribuire su GitHub",
+    fr: "Contribuer sur GitHub"
+  },
+  deleteTitle: {
+    en: "Remove domain?",
+    de: "Domain entfernen?",
+    es: "¿Eliminar dominio?",
+    it: "Rimuovere dominio?",
+    fr: "Supprimer le domaine ?"
+  },
+  deleteMessage: {
+    en: "Are you sure you want to remove {domain} from the list?",
+    de: "Möchtest du {domain} wirklich aus der Liste entfernen?",
+    es: "¿Seguro que quieres eliminar {domain} de la lista?",
+    it: "Sei sicuro di voler rimuovere {domain} dalla lista?",
+    fr: "Voulez-vous vraiment supprimer {domain} de la liste ?"
+  },
+  deleteCancel: {
+    en: "Cancel",
+    de: "Abbrechen",
+    es: "Cancelar",
+    it: "Annulla",
+    fr: "Annuler"
+  },
+  deleteConfirm: {
+    en: "Delete",
+    de: "Löschen",
+    es: "Eliminar",
+    it: "Elimina",
+    fr: "Supprimer"
+  },
+  genericTooltip: {
+    en: "Manually added domains use a generic integration and may not work perfectly on every site.",
+    de: "Manuell hinzugefügte Domains verwenden eine generische Integration und funktionieren möglicherweise nicht auf jeder Seite perfekt.",
+    es: "Los dominios añadidos manualmente usan una integración genérica y puede que no funcionen perfectamente en todos los sitios.",
+    it: "I domini aggiunti manualmente usano un'integrazione generica e potrebbero non funzionare perfettamente su ogni sito.",
+    fr: "Les domaines ajoutés manuellement utilisent une intégration générique et peuvent ne pas fonctionner parfaitement sur tous les sites."
+  },
+  copyButton: {
+    en: "Copy for Notion",
+    de: "Für Notion kopieren",
+    es: "Copiar para Notion",
+    it: "Copia per Notion",
+    fr: "Copier pour Notion"
+  },
+  copySuccess: {
+    en: "✓ Copied!",
+    de: "✓ Kopiert!",
+    es: "✓ Copiado",
+    it: "✓ Copiato",
+    fr: "✓ Copié"
+  },
+  provider_chatgpt: {
+    en: "ChatGPT",
+    de: "ChatGPT",
+    es: "ChatGPT",
+    it: "ChatGPT",
+    fr: "ChatGPT"
+  },
+  provider_gemini: {
+    en: "Gemini",
+    de: "Gemini",
+    es: "Gemini",
+    it: "Gemini",
+    fr: "Gemini"
+  },
+  provider_claude: {
+    en: "Claude",
+    de: "Claude",
+    es: "Claude",
+    it: "Claude",
+    fr: "Claude"
+  },
+  provider_generic_experimental: {
+    en: "generic",
+    de: "generic",
+    es: "genérico",
+    it: "generico",
+    fr: "générique"
+  }
+};
+function t(key, lang) {
+  var entry = translations[key];
+  if (!entry) return key;
+  return entry[lang] || entry.en;
+}
+var LANG_STORAGE_KEY = "equationAssistantLanguage";
+function getDefaultLanguage() {
+  if (typeof navigator !== "undefined" && navigator.language) {
+    var lower = navigator.language.toLowerCase();
+    if (lower.startsWith("de")) return "de";
+    if (lower.startsWith("es")) return "es";
+    if (lower.startsWith("it")) return "it";
+    if (lower.startsWith("fr")) return "fr";
+  }
+  return "en";
+}
+function loadLanguage() {
+  return new Promise(function (resolve) {
+    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
+      resolve(getDefaultLanguage());
+      return;
+    }
+    chrome.storage.local.get(LANG_STORAGE_KEY, function (data) {
+      var raw = data && data[LANG_STORAGE_KEY];
+      if (raw === "en" || raw === "de" || raw === "es" || raw === "it" || raw === "fr") {
+        resolve(raw);
+      } else {
+        resolve(getDefaultLanguage());
+      }
+    });
+  });
+}
+function saveLanguage(lang) {
+  return new Promise(function (resolve) {
+    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
+      resolve();
+      return;
+    }
+    chrome.storage.local.set(_defineProperty({}, LANG_STORAGE_KEY, lang), function () {
+      return resolve();
+    });
+  });
+}
+
+/***/ }),
+
 /***/ "./src/core/providers.ts":
 /*!*******************************!*\
   !*** ./src/core/providers.ts ***!
@@ -32411,9 +32637,10 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! react */ "./node_modules/react/index.js");
 /* harmony import */ var react__WEBPACK_IMPORTED_MODULE_0___default = /*#__PURE__*/__webpack_require__.n(react__WEBPACK_IMPORTED_MODULE_0__);
 /* harmony import */ var react_dom_client__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! react-dom/client */ "./node_modules/react-dom/client.js");
-/* harmony import */ var react_icons_fi__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react-icons/fi */ "./node_modules/react-icons/fi/index.mjs");
+/* harmony import */ var react_icons_fi__WEBPACK_IMPORTED_MODULE_5__ = __webpack_require__(/*! react-icons/fi */ "./node_modules/react-icons/fi/index.mjs");
 /* harmony import */ var _core_providers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../core/providers */ "./src/core/providers.ts");
-/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
+/* harmony import */ var _core_i18n__WEBPACK_IMPORTED_MODULE_3__ = __webpack_require__(/*! ../core/i18n */ "./src/core/i18n.ts");
+/* harmony import */ var react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__ = __webpack_require__(/*! react/jsx-runtime */ "./node_modules/react/jsx-runtime.js");
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
 function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
@@ -32433,6 +32660,7 @@ function _iterableToArrayLimit(arr, i) { var _i = null == arr ? null : "undefine
 function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
 function asyncGeneratorStep(gen, resolve, reject, _next, _throw, key, arg) { try { var info = gen[key](arg); var value = info.value; } catch (error) { reject(error); return; } if (info.done) { resolve(value); } else { Promise.resolve(value).then(_next, _throw); } }
 function _asyncToGenerator(fn) { return function () { var self = this, args = arguments; return new Promise(function (resolve, reject) { var gen = fn.apply(self, args); function _next(value) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "next", value); } function _throw(err) { asyncGeneratorStep(gen, resolve, reject, _next, _throw, "throw", err); } _next(undefined); }); }; }
+
 
 
 
@@ -32463,25 +32691,36 @@ function _loadDomains() {
         case 0:
           return _context3.abrupt("return", new Promise(function (resolve) {
             if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
-              resolve(DEFAULT_DOMAINS);
+              var cleaned = DEFAULT_DOMAINS.filter(function (d) {
+                return d.domain !== "perplexity.ai" && d.domain !== "www.perplexity.ai";
+              });
+              resolve(cleaned);
               return;
             }
             chrome.storage.local.get(STORAGE_KEY, function (data) {
               var raw = data && data[STORAGE_KEY];
               if (!raw || !Array.isArray(raw) || raw.length === 0) {
-                chrome.storage.local.set(_defineProperty({}, STORAGE_KEY, DEFAULT_DOMAINS), function () {
-                  resolve(_toConsumableArray(DEFAULT_DOMAINS));
+                var cleanedDefaults = DEFAULT_DOMAINS.filter(function (d) {
+                  return d.domain !== "perplexity.ai" && d.domain !== "www.perplexity.ai";
+                });
+                chrome.storage.local.set(_defineProperty({}, STORAGE_KEY, cleanedDefaults), function () {
+                  resolve(_toConsumableArray(cleanedDefaults));
                 });
                 return;
               }
-              var normalized = raw.map(function (item) {
+              var filteredRaw = raw.filter(function (item) {
+                return item && item.domain !== "perplexity.ai" && item.domain !== "www.perplexity.ai";
+              });
+              var normalized = filteredRaw.map(function (item) {
                 return (0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.withDefaultProvider)({
                   domain: item.domain,
                   enabled: item.enabled !== false,
                   provider: item.provider || (0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.getProviderForHost)(item.domain)
                 });
               });
-              resolve(normalized);
+              chrome.storage.local.set(_defineProperty({}, STORAGE_KEY, normalized), function () {
+                resolve(normalized);
+              });
             });
           }));
         case 1:
@@ -32520,18 +32759,18 @@ function _saveDomains() {
 var Switch = function Switch(_ref) {
   var checked = _ref.checked,
     onChange = _ref.onChange;
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("button", {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
     type: "button",
     className: "switch ".concat(checked ? "switch-on" : "switch-off"),
     onClick: function onClick() {
       return onChange(!checked);
     },
     "aria-pressed": checked,
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
       className: "switch-track"
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
       className: "switch-thumb"
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
       className: "switch-label",
       children: checked ? "On" : "Off"
     })]
@@ -32550,9 +32789,17 @@ var PopupApp = function PopupApp() {
     _useState6 = _slicedToArray(_useState5, 2),
     pendingDeleteIndex = _useState6[0],
     setPendingDeleteIndex = _useState6[1];
+  var _useState7 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)("en"),
+    _useState8 = _slicedToArray(_useState7, 2),
+    language = _useState8[0],
+    setLanguage = _useState8[1];
+  var _useState9 = (0,react__WEBPACK_IMPORTED_MODULE_0__.useState)(false),
+    _useState0 = _slicedToArray(_useState9, 2),
+    languageMenuOpen = _useState0[0],
+    setLanguageMenuOpen = _useState0[1];
   (0,react__WEBPACK_IMPORTED_MODULE_0__.useEffect)(function () {
     void _asyncToGenerator(/*#__PURE__*/_regeneratorRuntime().mark(function _callee() {
-      var list;
+      var list, storedLang;
       return _regeneratorRuntime().wrap(function _callee$(_context) {
         while (1) switch (_context.prev = _context.next) {
           case 0:
@@ -32561,7 +32808,12 @@ var PopupApp = function PopupApp() {
           case 2:
             list = _context.sent;
             setDomains(list);
-          case 4:
+            _context.next = 6;
+            return (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.loadLanguage)();
+          case 6:
+            storedLang = _context.sent;
+            setLanguage(storedLang);
+          case 8:
           case "end":
             return _context.stop();
         }
@@ -32617,11 +32869,18 @@ var PopupApp = function PopupApp() {
     void persist(next);
   }, [domains, persist]);
   var pendingDomain = pendingDeleteIndex !== null ? domains[pendingDeleteIndex] : null;
-  var formatProviderLabel = function formatProviderLabel(provider) {
-    if (provider === "generic") {
-      return "generic (experimental)";
+  var formatProviderLabel = function formatProviderLabel(provider, lang) {
+    switch (provider) {
+      case "chatgpt":
+        return (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("provider_chatgpt", lang);
+      case "gemini":
+        return (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("provider_gemini", lang);
+      case "claude":
+        return (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("provider_claude", lang);
+      case "generic":
+      default:
+        return (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("provider_generic_experimental", lang);
     }
-    return provider;
   };
   var openUrl = function openUrl(url) {
     if (typeof chrome !== "undefined" && chrome.tabs) {
@@ -32632,38 +32891,82 @@ var PopupApp = function PopupApp() {
       window.open(url, "_blank");
     }
   };
-  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+  return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
     className: "popup-root",
-    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("header", {
+    children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("header", {
       className: "popup-header",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         className: "popup-title",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("img", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("img", {
           src: "images/icon-t.png",
           className: "popup-logo",
           alt: ""
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
-          children: "ChatGPT \u2192 Notion Math"
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+          children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("title", language)
         })]
-      })
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("section", {
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
+        className: "lang-switcher-wrapper",
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
+          type: "button",
+          className: "lang-switcher",
+          "aria-haspopup": "listbox",
+          "aria-expanded": languageMenuOpen,
+          onClick: function onClick() {
+            return setLanguageMenuOpen(function (open) {
+              return !open;
+            });
+          },
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+            className: "lang-flag",
+            children: _core_i18n__WEBPACK_IMPORTED_MODULE_3__.LANGUAGES[language].flag
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+            className: "lang-code",
+            children: _core_i18n__WEBPACK_IMPORTED_MODULE_3__.LANGUAGES[language].code
+          })]
+        }), languageMenuOpen && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
+          className: "lang-menu",
+          role: "listbox",
+          children: Object.keys(_core_i18n__WEBPACK_IMPORTED_MODULE_3__.LANGUAGES).map(function (lang) {
+            return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
+              type: "button",
+              className: "lang-menu-item ".concat(lang === language ? "active" : ""),
+              onClick: function onClick() {
+                setLanguage(lang);
+                void (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.saveLanguage)(lang);
+                setLanguageMenuOpen(false);
+              },
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+                className: "lang-flag",
+                children: _core_i18n__WEBPACK_IMPORTED_MODULE_3__.LANGUAGES[lang].flag
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+                className: "lang-code",
+                children: _core_i18n__WEBPACK_IMPORTED_MODULE_3__.LANGUAGES[lang].code
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+                className: "lang-label",
+                children: _core_i18n__WEBPACK_IMPORTED_MODULE_3__.LANGUAGES[lang].label
+              })]
+            }, lang);
+          })
+        })]
+      })]
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("section", {
       className: "popup-section",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("h2", {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("h2", {
         className: "section-title",
-        children: ["Domains", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("button", {
+        children: [(0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("domainsTitle", language), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
           type: "button",
           className: "info-icon heading-info",
           "aria-label": "More info about generic domains",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_4__.FiInfo, {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_5__.FiInfo, {
             className: "info-icon-svg"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
             className: "info-tooltip",
-            children: "Manually added domains use a generic integration and may not work perfectly on every site."
+            children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("genericTooltip", language)
           })]
         })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         className: "domain-input-row",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("input", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("input", {
           value: inputValue,
           onChange: function onChange(e) {
             return setInputValue(e.target.value);
@@ -32675,106 +32978,106 @@ var PopupApp = function PopupApp() {
             }
           },
           type: "text",
-          placeholder: "z.B. chat.openai.com",
+          placeholder: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("domainPlaceholder", language),
           autoComplete: "off"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("button", {
           type: "button",
           onClick: handleAdd,
-          children: "Add"
+          children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("addButton", language)
         })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("ul", {
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("ul", {
         className: "domain-list",
         children: domains.map(function (d, i) {
-          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("li", {
+          return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("li", {
             className: "domain-item",
-            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("span", {
+            children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("span", {
               className: "domain-label",
-              children: [d.domain, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+              children: [d.domain, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
                 className: "provider-badge",
-                children: formatProviderLabel(d.provider)
+                children: formatProviderLabel(d.provider, language)
               })]
-            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+            }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
               className: "domain-controls",
-              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(Switch, {
+              children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(Switch, {
                 checked: d.enabled,
                 onChange: function onChange(v) {
                   return handleToggle(i, v);
                 }
-              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+              }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("button", {
                 type: "button",
                 className: "trash-btn",
-                title: "Entfernen",
+                title: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("trashTooltip", language),
                 onClick: function onClick() {
                   return setPendingDeleteIndex(i);
                 },
-                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_4__.FiTrash2, {})
+                children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_5__.FiTrash2, {})
               })]
             })]
           }, d.domain);
         })
       })]
-    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("section", {
+    }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("section", {
       className: "popup-section links-section",
-      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("button", {
-        type: "button",
-        className: "link-row",
-        onClick: function onClick() {
-          return openUrl("https://example.com/github");
-        },
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
-          className: "icon",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_4__.FiGithub, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
-          children: "Open-source on GitHub"
-        })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("button", {
+      children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
         type: "button",
         className: "link-row",
         onClick: function onClick() {
           return openUrl("https://example.com/coffee");
         },
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
           className: "icon",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_4__.FiCoffee, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
-          children: "Buy me a coffee"
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_5__.FiCoffee, {})
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+          children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("footerCoffee", language)
         })]
-      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("button", {
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
         type: "button",
         className: "link-row",
         onClick: function onClick() {
           return openUrl("https://example.com/chrome-store");
         },
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
           className: "icon",
-          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_4__.FiHelpCircle, {})
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
-          children: "Fragen / Hilfe"
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_5__.FiHelpCircle, {})
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+          children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("footerHelp", language)
+        })]
+      }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("button", {
+        type: "button",
+        className: "link-row",
+        onClick: function onClick() {
+          return openUrl("https://example.com/github");
+        },
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+          className: "icon",
+          children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(react_icons_fi__WEBPACK_IMPORTED_MODULE_5__.FiGithub, {})
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
+          children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("footerGithub", language)
         })]
       })]
-    }), pendingDomain && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("div", {
+    }), pendingDomain && /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("div", {
       className: "modal-backdrop",
-      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+      children: /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
         className: "modal-dialog",
-        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("h3", {
+        children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("h3", {
           className: "modal-title",
-          children: "Remove domain?"
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("p", {
+          children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("deleteTitle", language)
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("p", {
           className: "modal-text",
-          children: ["Are you sure you want to remove", " ", /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("span", {
+          children: [(0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("deleteMessage", language).replace("{domain}", ""), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
             className: "modal-domain",
             children: pendingDomain.domain
-          }), " from the list?"]
-        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsxs)("div", {
+          })]
+        }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
           className: "modal-actions",
-          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+          children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("button", {
             type: "button",
             className: "modal-btn secondary",
             onClick: function onClick() {
               return setPendingDeleteIndex(null);
             },
-            children: "Cancel"
-          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)("button", {
+            children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("deleteCancel", language)
+          }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("button", {
             type: "button",
             className: "modal-btn danger",
             onClick: function onClick() {
@@ -32783,7 +33086,7 @@ var PopupApp = function PopupApp() {
               }
               setPendingDeleteIndex(null);
             },
-            children: "Delete"
+            children: (0,_core_i18n__WEBPACK_IMPORTED_MODULE_3__.t)("deleteConfirm", language)
           })]
         })]
       })
@@ -32793,7 +33096,7 @@ var PopupApp = function PopupApp() {
 var container = document.getElementById("root");
 if (container) {
   var root = (0,react_dom_client__WEBPACK_IMPORTED_MODULE_1__.createRoot)(container);
-  root.render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_3__.jsx)(PopupApp, {}));
+  root.render(/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)(PopupApp, {}));
 }
 })();
 

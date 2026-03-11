@@ -3,16 +3,22 @@
 import { extractMath, normalizeGeminiClipboardText } from "../core/mathExtraction";
 import { copyTextToClipboard } from "../core/clipboard";
 import type { ProviderId } from "../core/providers";
+import { type SupportedLanguage, loadLanguage, getDefaultLanguage, t } from "../core/i18n";
 
 class EquationAssistant {
   provider: ProviderId;
   copyButton: HTMLButtonElement | null;
   _timer: any;
+  language: SupportedLanguage;
 
   constructor(provider: ProviderId) {
     this.provider = provider;
     this.copyButton = null;
     this._timer = null;
+    this.language = getDefaultLanguage();
+    loadLanguage().then((lang) => {
+      this.language = lang;
+    });
     this.setupSelectionListeners();
   }
 
@@ -67,7 +73,7 @@ class EquationAssistant {
     const btn = document.createElement("button");
     btn.type = "button";
     btn.className = "gpt-eq-copy-for-notion";
-    btn.textContent = "Copy for Notion";
+    btn.textContent = t("copyButton", this.language);
     btn.addEventListener("click", (e) => {
       e.preventDefault();
       e.stopPropagation();
@@ -101,7 +107,7 @@ class EquationAssistant {
             return copyTextToClipboard(final);
           })
           .then(() => {
-            btn.textContent = "✓ Copied!";
+            btn.textContent = t("copySuccess", this.language);
             btn.classList.add("gpt-eq-copy-for-notion-done");
             setTimeout(() => {
               if (btn.parentNode) btn.remove();
@@ -115,7 +121,7 @@ class EquationAssistant {
               chrome.storage.local.set({ notionCopyText: fallbackFinal });
             }
             copyTextToClipboard(fallbackFinal).then(() => {
-              btn.textContent = "✓ Copied!";
+              btn.textContent = t("copySuccess", this.language);
               btn.classList.add("gpt-eq-copy-for-notion-done");
               setTimeout(() => {
                 if (btn.parentNode) btn.remove();
@@ -134,7 +140,7 @@ class EquationAssistant {
       }
 
       copyTextToClipboard(final).then(() => {
-        btn.textContent = "✓ Copied!";
+        btn.textContent = t("copySuccess", this.language);
         btn.classList.add("gpt-eq-copy-for-notion-done");
         setTimeout(() => {
           if (btn.parentNode) btn.remove();

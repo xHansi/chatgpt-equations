@@ -3,6 +3,7 @@ import { createRoot } from "react-dom/client";
 import { FiGithub, FiCoffee, FiHelpCircle, FiTrash2, FiInfo } from "react-icons/fi";
 import type { ProviderId, ProviderDomainConfig } from "../core/providers";
 import { getProviderForHost, withDefaultProvider, seedDefaultDomains } from "../core/providers";
+import { LANGUAGES, type SupportedLanguage, loadLanguage, saveLanguage, t } from "../core/i18n";
 
 type DomainConfig = Required<ProviderDomainConfig>;
 
@@ -30,25 +31,39 @@ function normalizeDomain(raw: string): string {
 async function loadDomains(): Promise<DomainConfig[]> {
   return new Promise((resolve) => {
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
-      resolve(DEFAULT_DOMAINS);
+      const cleaned = DEFAULT_DOMAINS.filter(
+        (d) => d.domain !== "perplexity.ai" && d.domain !== "www.perplexity.ai"
+      );
+      resolve(cleaned);
       return;
     }
     chrome.storage.local.get(STORAGE_KEY, (data) => {
       const raw = (data && (data as any)[STORAGE_KEY]) as any[] | undefined;
       if (!raw || !Array.isArray(raw) || raw.length === 0) {
-        chrome.storage.local.set({ [STORAGE_KEY]: DEFAULT_DOMAINS }, () => {
-          resolve([...DEFAULT_DOMAINS]);
+        const cleanedDefaults = DEFAULT_DOMAINS.filter(
+          (d) => d.domain !== "perplexity.ai" && d.domain !== "www.perplexity.ai"
+        );
+        chrome.storage.local.set({ [STORAGE_KEY]: cleanedDefaults }, () => {
+          resolve([...cleanedDefaults]);
         });
         return;
       }
-      const normalized: DomainConfig[] = raw.map((item: any) =>
+      const filteredRaw = raw.filter(
+        (item: any) =>
+          item &&
+          item.domain !== "perplexity.ai" &&
+          item.domain !== "www.perplexity.ai"
+      );
+      const normalized: DomainConfig[] = filteredRaw.map((item: any) =>
         withDefaultProvider({
           domain: item.domain,
           enabled: item.enabled !== false,
           provider: (item.provider as ProviderId | undefined) || getProviderForHost(item.domain),
         })
       ) as DomainConfig[];
-      resolve(normalized);
+      chrome.storage.local.set({ [STORAGE_KEY]: normalized }, () => {
+        resolve(normalized);
+      });
     });
   });
 }
@@ -85,11 +100,15 @@ const PopupApp: React.FC = () => {
   const [domains, setDomains] = useState<DomainConfig[]>([]);
   const [inputValue, setInputValue] = useState("");
   const [pendingDeleteIndex, setPendingDeleteIndex] = useState<number | null>(null);
+  const [language, setLanguage] = useState<SupportedLanguage>("en");
+  const [languageMenuOpen, setLanguageMenuOpen] = useState(false);
 
   useEffect(() => {
     void (async () => {
       const list = await loadDomains();
       setDomains(list);
+      const storedLang = await loadLanguage();
+      setLanguage(storedLang);
     })();
   }, []);
 
@@ -131,11 +150,18 @@ const PopupApp: React.FC = () => {
 
   const pendingDomain = pendingDeleteIndex !== null ? domains[pendingDeleteIndex] : null;
 
-  const formatProviderLabel = (provider: ProviderId): string => {
-    if (provider === "generic") {
-      return "generic (experimental)";
+  const formatProviderLabel = (provider: ProviderId, lang: SupportedLanguage): string => {
+    switch (provider) {
+      case "chatgpt":
+        return t("provider_chatgpt", lang);
+      case "gemini":
+        return t("provider_gemini", lang);
+      case "claude":
+        return t("provider_claude", lang);
+      case "generic":
+      default:
+        return t("provider_generic_experimental", lang);
     }
-    return provider;
   };
 
   const openUrl = (url: string) => {
@@ -151,13 +177,49 @@ const PopupApp: React.FC = () => {
       <header className="popup-header">
         <div className="popup-title">
           <img src="images/icon-t.png" className="popup-logo" alt="" />
-          <span>ChatGPT → Notion Math</span>
+          <span>{t("title", language)}</span>
+        </div>
+        <div className="lang-switcher-wrapper">
+          <button
+            type="button"
+            className="lang-switcher"
+            aria-haspopup="listbox"
+            aria-expanded={languageMenuOpen}
+            onClick={() => setLanguageMenuOpen((open) => !open)}
+          >
+            <span className="lang-flag">
+              {LANGUAGES[language].flag}
+            </span>
+            <span className="lang-code">
+              {LANGUAGES[language].code}
+            </span>
+          </button>
+          {languageMenuOpen && (
+            <div className="lang-menu" role="listbox">
+              {(Object.keys(LANGUAGES) as SupportedLanguage[]).map((lang) => (
+                <button
+                  key={lang}
+                  type="button"
+                  className={`lang-menu-item ${lang === language ? "active" : ""}`}
+                  onClick={() => {
+                    setLanguage(lang);
+                    void saveLanguage(lang);
+                    setLanguageMenuOpen(false);
+                  }}
+                >
+                  <span className="lang-flag">{LANGUAGES[lang].flag}</span>
+                  <span className="lang-code">{LANGUAGES[lang].code}</span>
+                  <span className="lang-label">{LANGUAGES[lang].label}</span>
+                </button>
+              ))}
+            </div>
+          )}
         </div>
       </header>
 
       <section className="popup-section">
         <h2 className="section-title">
-          Domains
+          {t("domainsTitle", language)}
           <button
             type="button"
             className="info-icon heading-info"
@@ -165,7 +227,7 @@ const PopupApp: React.FC = () => {
           >
             <FiInfo className="info-icon-svg" />
             <span className="info-tooltip">
-              Manually added domains use a generic integration and may not work perfectly on every site.
+              {t("genericTooltip", language)}
             </span>
           </button>
         </h2>
@@ -180,11 +242,11 @@ const PopupApp: React.FC = () => {
               }
             }}
             type="text"
-            placeholder="z.B. chat.openai.com"
+            placeholder={t("domainPlaceholder", language)}
             autoComplete="off"
           />
           <button type="button" onClick={handleAdd}>
-            Add
+            {t("addButton", language)}
           </button>
         </div>
         <ul className="domain-list">
@@ -192,7 +254,9 @@ const PopupApp: React.FC = () => {
             <li key={d.domain} className="domain-item">
               <span className="domain-label">
                 {d.domain}
-                <span className="provider-badge">{formatProviderLabel(d.provider)}</span>
+                <span className="provider-badge">
+                  {formatProviderLabel(d.provider, language)}
+                </span>
               </span>
               <div className="domain-controls">
                 <Switch
@@ -202,7 +266,7 @@ const PopupApp: React.FC = () => {
                 <button
                   type="button"
                   className="trash-btn"
-                  title="Entfernen"
+                    title={t("trashTooltip", language)}
                   onClick={() => setPendingDeleteIndex(i)}
                 >
                   <FiTrash2 />
@@ -217,22 +281,12 @@ const PopupApp: React.FC = () => {
         <button
           type="button"
           className="link-row"
-          onClick={() => openUrl("https://example.com/github")}
-        >
-          <span className="icon">
-            <FiGithub />
-          </span>
-          <span>Open-source on GitHub</span>
-        </button>
-        <button
-          type="button"
-          className="link-row"
           onClick={() => openUrl("https://example.com/coffee")}
         >
           <span className="icon">
             <FiCoffee />
           </span>
-          <span>Buy me a coffee</span>
+          <span>{t("footerCoffee", language)}</span>
         </button>
         <button
           type="button"
@@ -242,17 +296,27 @@ const PopupApp: React.FC = () => {
           <span className="icon">
             <FiHelpCircle />
           </span>
-          <span>Fragen / Hilfe</span>
+          <span>{t("footerHelp", language)}</span>
+        </button>
+        <button
+          type="button"
+          className="link-row"
+          onClick={() => openUrl("https://example.com/github")}
+        >
+          <span className="icon">
+            <FiGithub />
+          </span>
+          <span>{t("footerGithub", language)}</span>
         </button>
       </section>
 
       {pendingDomain && (
         <div className="modal-backdrop">
           <div className="modal-dialog">
-            <h3 className="modal-title">Remove domain?</h3>
+            <h3 className="modal-title">{t("deleteTitle", language)}</h3>
             <p className="modal-text">
-              Are you sure you want to remove{" "}
-              <span className="modal-domain">{pendingDomain.domain}</span> from the list?
+              {t("deleteMessage", language).replace("{domain}", "")}
+              <span className="modal-domain">{pendingDomain.domain}</span>
             </p>
             <div className="modal-actions">
               <button
@@ -260,7 +324,7 @@ const PopupApp: React.FC = () => {
                 className="modal-btn secondary"
                 onClick={() => setPendingDeleteIndex(null)}
               >
-                Cancel
+                {t("deleteCancel", language)}
               </button>
               <button
                 type="button"
@@ -272,7 +336,7 @@ const PopupApp: React.FC = () => {
                   setPendingDeleteIndex(null);
                 }}
               >
-                Delete
+                {t("deleteConfirm", language)}
               </button>
             </div>
           </div>

@@ -14,6 +14,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ });
 /* harmony import */ var _core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../core/mathExtraction */ "./src/core/mathExtraction.ts");
 /* harmony import */ var _core_clipboard__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../core/clipboard */ "./src/core/clipboard.ts");
+/* harmony import */ var _core_i18n__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../core/i18n */ "./src/core/i18n.ts");
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor); } }
@@ -24,28 +25,34 @@ function _toPrimitive(input, hint) { if (_typeof(input) !== "object" || input ==
 
 
 
+
 var EquationAssistant = /*#__PURE__*/function () {
   function EquationAssistant(provider) {
+    var _this = this;
     _classCallCheck(this, EquationAssistant);
     this.provider = provider;
     this.copyButton = null;
     this._timer = null;
+    this.language = (0,_core_i18n__WEBPACK_IMPORTED_MODULE_2__.getDefaultLanguage)();
+    (0,_core_i18n__WEBPACK_IMPORTED_MODULE_2__.loadLanguage)().then(function (lang) {
+      _this.language = lang;
+    });
     this.setupSelectionListeners();
   }
   _createClass(EquationAssistant, [{
     key: "setupSelectionListeners",
     value: function setupSelectionListeners() {
-      var _this = this;
+      var _this2 = this;
       document.addEventListener("mouseup", function () {
-        clearTimeout(_this._timer);
-        _this._timer = setTimeout(function () {
-          return _this.onSelectionChange();
+        clearTimeout(_this2._timer);
+        _this2._timer = setTimeout(function () {
+          return _this2.onSelectionChange();
         }, 80);
       });
       document.addEventListener("selectionchange", function () {
-        clearTimeout(_this._timer);
-        _this._timer = setTimeout(function () {
-          return _this.onSelectionChange();
+        clearTimeout(_this2._timer);
+        _this2._timer = setTimeout(function () {
+          return _this2.onSelectionChange();
         }, 100);
       });
     }
@@ -72,7 +79,7 @@ var EquationAssistant = /*#__PURE__*/function () {
   }, {
     key: "showCopyButton",
     value: function showCopyButton(selection, textToCopy) {
-      var _this2 = this;
+      var _this3 = this;
       if (this.copyButton && this.copyButton.classList.contains("gpt-eq-copy-for-notion-done")) {
         return;
       }
@@ -88,7 +95,7 @@ var EquationAssistant = /*#__PURE__*/function () {
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "gpt-eq-copy-for-notion";
-      btn.textContent = "Copy for Notion";
+      btn.textContent = (0,_core_i18n__WEBPACK_IMPORTED_MODULE_2__.t)("copyButton", this.language);
       btn.addEventListener("click", function (e) {
         e.preventDefault();
         e.stopPropagation();
@@ -96,7 +103,7 @@ var EquationAssistant = /*#__PURE__*/function () {
 
         // Gemini: first trigger a normal copy and then read the raw clipboard text,
         // converting it into our $<...>$ format so we share the same source as Ctrl/Cmd+C.
-        if (_this2.provider === "gemini" && typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.readText) {
+        if (_this3.provider === "gemini" && typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.readText) {
           try {
             document.execCommand("copy");
           } catch (_unused) {
@@ -112,43 +119,43 @@ var EquationAssistant = /*#__PURE__*/function () {
             }
             return (0,_core_clipboard__WEBPACK_IMPORTED_MODULE_1__.copyTextToClipboard)(_final);
           }).then(function () {
-            btn.textContent = "✓ Copied!";
+            btn.textContent = (0,_core_i18n__WEBPACK_IMPORTED_MODULE_2__.t)("copySuccess", _this3.language);
             btn.classList.add("gpt-eq-copy-for-notion-done");
             setTimeout(function () {
               if (btn.parentNode) btn.remove();
-              _this2.copyButton = null;
+              _this3.copyButton = null;
             }, 1800);
           })["catch"](function () {
             // Fall back to the generic extraction path if anything goes wrong.
-            var fallbackFinal = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(_this2.provider, sel) || textToCopy || "";
+            var fallbackFinal = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(_this3.provider, sel) || textToCopy || "";
             if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
               chrome.storage.local.set({
                 notionCopyText: fallbackFinal
               });
             }
             (0,_core_clipboard__WEBPACK_IMPORTED_MODULE_1__.copyTextToClipboard)(fallbackFinal).then(function () {
-              btn.textContent = "✓ Copied!";
+              btn.textContent = (0,_core_i18n__WEBPACK_IMPORTED_MODULE_2__.t)("copySuccess", _this3.language);
               btn.classList.add("gpt-eq-copy-for-notion-done");
               setTimeout(function () {
                 if (btn.parentNode) btn.remove();
-                _this2.copyButton = null;
+                _this3.copyButton = null;
               }, 1800);
             });
           });
           return;
         }
-        var _final2 = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(_this2.provider, sel) || textToCopy || "";
+        var _final2 = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(_this3.provider, sel) || textToCopy || "";
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
           chrome.storage.local.set({
             notionCopyText: _final2
           });
         }
         (0,_core_clipboard__WEBPACK_IMPORTED_MODULE_1__.copyTextToClipboard)(_final2).then(function () {
-          btn.textContent = "✓ Copied!";
+          btn.textContent = (0,_core_i18n__WEBPACK_IMPORTED_MODULE_2__.t)("copySuccess", _this3.language);
           btn.classList.add("gpt-eq-copy-for-notion-done");
           setTimeout(function () {
             if (btn.parentNode) btn.remove();
-            _this2.copyButton = null;
+            _this3.copyButton = null;
           }, 1800);
         });
       });
@@ -509,6 +516,232 @@ function collectEquationRanges(root) {
     });
   }
   return targets;
+}
+
+/***/ }),
+
+/***/ "./src/core/i18n.ts":
+/*!**************************!*\
+  !*** ./src/core/i18n.ts ***!
+  \**************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "LANGUAGES": () => (/* binding */ LANGUAGES),
+/* harmony export */   "getDefaultLanguage": () => (/* binding */ getDefaultLanguage),
+/* harmony export */   "loadLanguage": () => (/* binding */ loadLanguage),
+/* harmony export */   "saveLanguage": () => (/* binding */ saveLanguage),
+/* harmony export */   "t": () => (/* binding */ t)
+/* harmony export */ });
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return _typeof(key) === "symbol" ? key : String(key); }
+function _toPrimitive(input, hint) { if (_typeof(input) !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (_typeof(res) !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
+var LANGUAGES = {
+  en: {
+    code: "EN",
+    flag: "🇺🇸",
+    label: "English"
+  },
+  de: {
+    code: "DE",
+    flag: "🇩🇪",
+    label: "Deutsch"
+  },
+  es: {
+    code: "ES",
+    flag: "🇪🇸",
+    label: "Español"
+  },
+  it: {
+    code: "IT",
+    flag: "🇮🇹",
+    label: "Italiano"
+  },
+  fr: {
+    code: "FR",
+    flag: "🇫🇷",
+    label: "Français"
+  }
+};
+var translations = {
+  title: {
+    en: "ChatGPT → Notion Math",
+    de: "ChatGPT → Notion Mathe",
+    es: "ChatGPT → Notion Matemáticas",
+    it: "ChatGPT → Notion Matematica",
+    fr: "ChatGPT → Notion Math"
+  },
+  domainsTitle: {
+    en: "Domains",
+    de: "Domains",
+    es: "Dominios",
+    it: "Domini",
+    fr: "Domaines"
+  },
+  domainPlaceholder: {
+    en: "e.g. chat.openai.com",
+    de: "z.B. chat.openai.com",
+    es: "p.ej. chat.openai.com",
+    it: "es. chat.openai.com",
+    fr: "ex. chat.openai.com"
+  },
+  addButton: {
+    en: "Add",
+    de: "Hinzufügen",
+    es: "Añadir",
+    it: "Aggiungi",
+    fr: "Ajouter"
+  },
+  trashTooltip: {
+    en: "Remove",
+    de: "Entfernen",
+    es: "Eliminar",
+    it: "Rimuovere",
+    fr: "Supprimer"
+  },
+  footerCoffee: {
+    en: "Buy me a coffee",
+    de: "Spendiere mir einen Kaffee",
+    es: "Invítame a un café",
+    it: "Offrimi un caffè",
+    fr: "Offrez-moi un café"
+  },
+  footerHelp: {
+    en: "Help / Questions",
+    de: "Hilfe / Fragen",
+    es: "Ayuda / Preguntas",
+    it: "Aiuto / Domande",
+    fr: "Aide / Questions"
+  },
+  footerGithub: {
+    en: "Contribute on GitHub",
+    de: "Auf GitHub beitragen",
+    es: "Contribuir en GitHub",
+    it: "Contribuire su GitHub",
+    fr: "Contribuer sur GitHub"
+  },
+  deleteTitle: {
+    en: "Remove domain?",
+    de: "Domain entfernen?",
+    es: "¿Eliminar dominio?",
+    it: "Rimuovere dominio?",
+    fr: "Supprimer le domaine ?"
+  },
+  deleteMessage: {
+    en: "Are you sure you want to remove {domain} from the list?",
+    de: "Möchtest du {domain} wirklich aus der Liste entfernen?",
+    es: "¿Seguro que quieres eliminar {domain} de la lista?",
+    it: "Sei sicuro di voler rimuovere {domain} dalla lista?",
+    fr: "Voulez-vous vraiment supprimer {domain} de la liste ?"
+  },
+  deleteCancel: {
+    en: "Cancel",
+    de: "Abbrechen",
+    es: "Cancelar",
+    it: "Annulla",
+    fr: "Annuler"
+  },
+  deleteConfirm: {
+    en: "Delete",
+    de: "Löschen",
+    es: "Eliminar",
+    it: "Elimina",
+    fr: "Supprimer"
+  },
+  genericTooltip: {
+    en: "Manually added domains use a generic integration and may not work perfectly on every site.",
+    de: "Manuell hinzugefügte Domains verwenden eine generische Integration und funktionieren möglicherweise nicht auf jeder Seite perfekt.",
+    es: "Los dominios añadidos manualmente usan una integración genérica y puede que no funcionen perfectamente en todos los sitios.",
+    it: "I domini aggiunti manualmente usano un'integrazione generica e potrebbero non funzionare perfettamente su ogni sito.",
+    fr: "Les domaines ajoutés manuellement utilisent une intégration générique et peuvent ne pas fonctionner parfaitement sur tous les sites."
+  },
+  copyButton: {
+    en: "Copy for Notion",
+    de: "Für Notion kopieren",
+    es: "Copiar para Notion",
+    it: "Copia per Notion",
+    fr: "Copier pour Notion"
+  },
+  copySuccess: {
+    en: "✓ Copied!",
+    de: "✓ Kopiert!",
+    es: "✓ Copiado",
+    it: "✓ Copiato",
+    fr: "✓ Copié"
+  },
+  provider_chatgpt: {
+    en: "ChatGPT",
+    de: "ChatGPT",
+    es: "ChatGPT",
+    it: "ChatGPT",
+    fr: "ChatGPT"
+  },
+  provider_gemini: {
+    en: "Gemini",
+    de: "Gemini",
+    es: "Gemini",
+    it: "Gemini",
+    fr: "Gemini"
+  },
+  provider_claude: {
+    en: "Claude",
+    de: "Claude",
+    es: "Claude",
+    it: "Claude",
+    fr: "Claude"
+  },
+  provider_generic_experimental: {
+    en: "generic",
+    de: "generic",
+    es: "genérico",
+    it: "generico",
+    fr: "générique"
+  }
+};
+function t(key, lang) {
+  var entry = translations[key];
+  if (!entry) return key;
+  return entry[lang] || entry.en;
+}
+var LANG_STORAGE_KEY = "equationAssistantLanguage";
+function getDefaultLanguage() {
+  if (typeof navigator !== "undefined" && navigator.language) {
+    var lower = navigator.language.toLowerCase();
+    if (lower.startsWith("de")) return "de";
+    if (lower.startsWith("es")) return "es";
+    if (lower.startsWith("it")) return "it";
+    if (lower.startsWith("fr")) return "fr";
+  }
+  return "en";
+}
+function loadLanguage() {
+  return new Promise(function (resolve) {
+    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
+      resolve(getDefaultLanguage());
+      return;
+    }
+    chrome.storage.local.get(LANG_STORAGE_KEY, function (data) {
+      var raw = data && data[LANG_STORAGE_KEY];
+      if (raw === "en" || raw === "de" || raw === "es" || raw === "it" || raw === "fr") {
+        resolve(raw);
+      } else {
+        resolve(getDefaultLanguage());
+      }
+    });
+  });
+}
+function saveLanguage(lang) {
+  return new Promise(function (resolve) {
+    if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
+      resolve();
+      return;
+    }
+    chrome.storage.local.set(_defineProperty({}, LANG_STORAGE_KEY, lang), function () {
+      return resolve();
+    });
+  });
 }
 
 /***/ }),
