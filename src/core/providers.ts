@@ -1,4 +1,4 @@
-export type ProviderId = "chatgpt" | "gemini" | "perplexity" | "claude" | "generic";
+export type ProviderId = "chatgpt" | "gemini" | "claude" | "generic";
 
 export interface ProviderDomainConfig {
   domain: string;
@@ -10,8 +10,6 @@ const DEFAULT_PROVIDER_MAP: Array<{ domain: string; provider: ProviderId }> = [
   { domain: "chat.openai.com", provider: "chatgpt" },
   { domain: "chatgpt.com", provider: "chatgpt" },
   { domain: "gemini.google.com", provider: "gemini" },
-  { domain: "perplexity.ai", provider: "perplexity" },
-  { domain: "www.perplexity.ai", provider: "perplexity" },
   { domain: "claude.ai", provider: "claude" },
 ];
 

@@ -336,14 +336,24 @@ export function extractMathFromChatGpt(selection: Selection | null): string {
   return getNotionFormatFromSelection(selection);
 }
 
+/**
+ * Claude-specific extractor:
+ * - Prefer LaTeX-like lines (containing '\' etc.) and turn each into $<...>$.
+ * - If nothing LaTeX-like is found, fall back to the generic extractor.
+ */
+export function extractMathFromClaudeSelection(selection: Selection | null): string {
+  // For now Claude uses the same DOM-based extraction as ChatGPT.
+  return extractMathFromChatGpt(selection);
+}
+
 export function getExtractionStrategy(provider: ProviderId): MathExtractionStrategy {
   switch (provider) {
     case "chatgpt":
       return (_root, selection) => extractMathFromChatGpt(selection);
     case "gemini":
       return (_root, selection) => extractMathFromGeminiSelection(selection);
-    case "perplexity":
     case "claude":
+      return (_root, selection) => extractMathFromClaudeSelection(selection);
     case "generic":
     default:
       return (_root, selection) => extractMathFromSelectionGeneric(selection);

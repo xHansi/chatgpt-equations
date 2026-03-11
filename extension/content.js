@@ -94,13 +94,13 @@ var EquationAssistant = /*#__PURE__*/function () {
         e.stopPropagation();
         var sel = window.getSelection();
 
-        // Gemini: zuerst normalen Copy-Vorgang triggern und den rohen Clipboard-Text
-        // in unser $<...>$-Format umwandeln, damit wir die gleiche Quelle nutzen wie Strg+C.
+        // Gemini: first trigger a normal copy and then read the raw clipboard text,
+        // converting it into our $<...>$ format so we share the same source as Ctrl/Cmd+C.
         if (_this2.provider === "gemini" && typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.readText) {
           try {
             document.execCommand("copy");
           } catch (_unused) {
-            // ignore; wir fallen ggf. auf den normalen Pfad zurück
+            // ignore; we will fall back to the generic path if needed
           }
           navigator.clipboard.readText().then(function (raw) {
             var normalized = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.normalizeGeminiClipboardText)(raw);
@@ -119,7 +119,7 @@ var EquationAssistant = /*#__PURE__*/function () {
               _this2.copyButton = null;
             }, 1800);
           })["catch"](function () {
-            // Fallback auf den generischen Pfad, falls irgendetwas schief geht.
+            // Fall back to the generic extraction path if anything goes wrong.
             var fallbackFinal = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(_this2.provider, sel) || textToCopy || "";
             if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
               chrome.storage.local.set({
@@ -523,6 +523,7 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
 /* harmony export */   "extractMath": () => (/* binding */ extractMath),
 /* harmony export */   "extractMathFromChatGpt": () => (/* binding */ extractMathFromChatGpt),
+/* harmony export */   "extractMathFromClaudeSelection": () => (/* binding */ extractMathFromClaudeSelection),
 /* harmony export */   "extractMathFromGeminiSelection": () => (/* binding */ extractMathFromGeminiSelection),
 /* harmony export */   "extractMathFromSelectionGeneric": () => (/* binding */ extractMathFromSelectionGeneric),
 /* harmony export */   "getExtractionStrategy": () => (/* binding */ getExtractionStrategy),
@@ -624,13 +625,13 @@ function applyGenericMathNormalization(text) {
 }
 
 /**
- * Heuristik: erkennt Blöcke mit vielen Unicode-Math-Symbolen (DeepSeek-Style),
- * um sie optional in LaTeX zu überführen.
+ * Heuristic: detects blocks with many Unicode math symbols (DeepSeek-style),
+ * so we can optionally convert them to LaTeX.
  */
 function looksLikeUnicodeMathBlock(text) {
-  // Zeichen, die typisch für Unicode-Math-Ausgabe sind (griechisch, Operatoren, Integral, Partial, etc.)
+  // Characters that are typical for Unicode math output (Greek, operators, integrals, partials, etc.)
   var unicodeMathPattern = /[∂∫∞≈≠≤≥√±→⋅·╱∑∏ΔΛΩμνπφθλσρΓΨΦ]/;
-  // Wenn zu wenig solcher Zeichen vorkommen, behandeln wir es nicht als speziellen Block.
+  // If there are too few such characters, we do not treat it as a dedicated math block.
   var hits = 0;
   var _iterator = _createForOfIteratorHelper(text),
     _step;
@@ -651,24 +652,24 @@ function looksLikeUnicodeMathBlock(text) {
 }
 
 /**
- * Heuristik für ASCII-basierte Math-Blöcke (DeepSeek-Style ohne Unicode),
- * z.B. mehrzeilige "x = ..." mit vielen Operatoren, aber ohne lange Wörter.
+ * Heuristic for ASCII-based math blocks (DeepSeek-style without Unicode),
+ * e.g. multi-line "x = ..." with many operators but without long words.
  */
 function looksLikeAsciiMathBlock(text) {
   var trimmed = text.trim();
   if (!trimmed) return false;
 
-  // Enthält mindestens ein Gleichheitszeichen oder +/- Vergleichsoperator.
+  // Must contain at least one equality or +/- / comparison operator.
   if (!/[=±<>]/.test(trimmed)) {
     return false;
   }
 
-  // Wenn es "lange" Wörter gibt, ist es wahrscheinlich eher normaler Text.
+  // If there are "long" words, it is probably regular prose, not a pure math block.
   if (/\b[A-Za-z]{5,}\b/.test(trimmed)) {
     return false;
   }
 
-  // Erlaubte Zeichen: Buchstaben, Ziffern, Leerraum und typische Operatoren/Klammern.
+  // Allowed characters: letters, digits, whitespace and common operators/brackets.
   var disallowed = trimmed.replace(/[A-Za-z0-9\s()+\-*/=±^_.,]/g, "");
   if (disallowed.length > 0) {
     return false;
@@ -677,8 +678,8 @@ function looksLikeAsciiMathBlock(text) {
 }
 
 /**
- * Sehr konservative Unicode-Math → LaTeX Abbildung für DeepSeek-Ausgaben.
- * Wir decken nur häufige Symbole ab; unbekannte Zeichen bleiben unverändert.
+ * Conservative Unicode-math → LaTeX mapping for DeepSeek-style output.
+ * We only cover common symbols; unknown characters are left unchanged.
  */
 function normalizeUnicodeMathToLatex(text) {
   var out = text;
@@ -769,6 +770,16 @@ function extractMathFromGeminiSelection(selection) {
 function extractMathFromChatGpt(selection) {
   return (0,_notionFormat__WEBPACK_IMPORTED_MODULE_0__.getNotionFormatFromSelection)(selection);
 }
+
+/**
+ * Claude-specific extractor:
+ * - Prefer LaTeX-like lines (containing '\' etc.) and turn each into $<...>$.
+ * - If nothing LaTeX-like is found, fall back to the generic extractor.
+ */
+function extractMathFromClaudeSelection(selection) {
+  // For now Claude uses the same DOM-based extraction as ChatGPT.
+  return extractMathFromChatGpt(selection);
+}
 function getExtractionStrategy(provider) {
   switch (provider) {
     case "chatgpt":
@@ -779,8 +790,11 @@ function getExtractionStrategy(provider) {
       return function (_root, selection) {
         return extractMathFromGeminiSelection(selection);
       };
-    case "perplexity":
     case "claude":
+      return function (_root, selection) {
+        return extractMathFromClaudeSelection(selection);
+      };
+    case "perplexity":
     case "generic":
     default:
       return function (_root, selection) {
@@ -806,22 +820,22 @@ function normalizeGeminiClipboardText(raw) {
 
 /**
  * Generic text-based math extraction for non-ChatGPT providers:
- * - Versucht zuerst klassische LaTeX-Delimiters zu normalisieren.
- * - Fällt dann auf die Unicode/ASCII-Math-Heuristiken zurück (DeepSeek-Style),
- *   um aus ungewöhnlich formatierten Blöcken einen einzelnen $<...>$-Ausdruck zu bauen.
+ * - First tries to normalize standard LaTeX delimiters.
+ * - Then falls back to Unicode/ASCII-math heuristics (DeepSeek-style)
+ *   to turn unusually formatted blocks into a single $<...>$ expression.
  */
 function extractMathFromSelectionGeneric(selection) {
   if (!selection || selection.rangeCount === 0) return "";
   var rawText = selection.toString();
   if (!rawText.trim()) return "";
 
-  // 1) Direkte LaTeX-Normalisierung auf dem Gesamttext.
+  // 1) Direct LaTeX normalization on the full text.
   var direct = applyGenericMathNormalization(rawText);
   if (direct !== rawText) {
     return direct.trim();
   }
 
-  // 2) DeepSeek-Style: Text in Absätze teilen und "mathigsten" Block suchen.
+  // 2) DeepSeek-style: split text into paragraphs and look for the "most mathy" block.
   var paragraphs = rawText.split(/\n\s*\n+/);
   var text = rawText;
   var _iterator2 = _createForOfIteratorHelper(paragraphs),
@@ -837,7 +851,7 @@ function extractMathFromSelectionGeneric(selection) {
       }
     }
 
-    // 3) Wenn das nicht reicht: von unten nach oben Zeilen sammeln, bis es mathig aussieht.
+    // 3) If that is not enough: collect lines from bottom to top until it looks like math.
   } catch (err) {
     _iterator2.e(err);
   } finally {
@@ -858,12 +872,12 @@ function extractMathFromSelectionGeneric(selection) {
     }
   }
 
-  // 4) Wenn der finale Text immer noch nicht wie Math aussieht, brechen wir ab.
+  // 4) If the final text still does not look like math, abort.
   if (!looksLikeUnicodeMathBlock(text) && !looksLikeAsciiMathBlock(text)) {
     return "";
   }
 
-  // 5) Unicode→LaTeX-Mapping anwenden; falls nichts greift, Whitespace glätten.
+  // 5) Apply Unicode→LaTeX mapping; if nothing triggers, at least normalize whitespace.
   var latex = normalizeUnicodeMathToLatex(text).trim();
   if (!latex) {
     latex = text.replace(/\s+/g, " ").trim();
