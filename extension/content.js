@@ -794,7 +794,6 @@ function getExtractionStrategy(provider) {
       return function (_root, selection) {
         return extractMathFromClaudeSelection(selection);
       };
-    case "perplexity":
     case "generic":
     default:
       return function (_root, selection) {
@@ -1028,12 +1027,6 @@ var DEFAULT_PROVIDER_MAP = [{
 }, {
   domain: "gemini.google.com",
   provider: "gemini"
-}, {
-  domain: "perplexity.ai",
-  provider: "perplexity"
-}, {
-  domain: "www.perplexity.ai",
-  provider: "perplexity"
 }, {
   domain: "claude.ai",
   provider: "claude"

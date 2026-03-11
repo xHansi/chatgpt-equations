@@ -34,12 +34,6 @@ var DEFAULT_PROVIDER_MAP = [{
   domain: "gemini.google.com",
   provider: "gemini"
 }, {
-  domain: "perplexity.ai",
-  provider: "perplexity"
-}, {
-  domain: "www.perplexity.ai",
-  provider: "perplexity"
-}, {
   domain: "claude.ai",
   provider: "claude"
 }];
