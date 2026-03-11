@@ -13,6 +13,8 @@ const DEFAULT_DOMAINS: DomainConfig[] = seedDefaultDomains().map((d) =>
   withDefaultProvider(d)
 ) as DomainConfig[];
 
+const FIXED_DOMAIN_SET = new Set(DEFAULT_DOMAINS.map((d) => d.domain));
+
 function normalizeDomain(raw: string): string {
   const trimmed = (raw || "").trim();
   if (!trimmed) return "";
@@ -127,7 +129,10 @@ const PopupApp: React.FC = () => {
       setInputValue("");
       return;
     }
-    const next = [...domains, withDefaultProvider({ domain: normalized, enabled: true }) as DomainConfig];
+    const next = [
+      ...domains,
+      withDefaultProvider({ domain: normalized, enabled: true }) as DomainConfig,
+    ];
     void persist(next);
     setInputValue("");
   }, [domains, inputValue, persist]);
@@ -135,6 +140,14 @@ const PopupApp: React.FC = () => {
   const handleToggle = useCallback(
     (index: number, value: boolean) => {
       const next = domains.map((d, i) => (i === index ? { ...d, enabled: value } : d));
+      void persist(next);
+    },
+    [domains, persist]
+  );
+
+  const handleProviderChange = useCallback(
+    (index: number, provider: ProviderId) => {
+      const next = domains.map((d, i) => (i === index ? { ...d, provider } : d));
       void persist(next);
     },
     [domains, persist]
@@ -254,30 +267,57 @@ const PopupApp: React.FC = () => {
           </button>
         </div>
         <ul className="domain-list">
-          {domains.map((d, i) => (
-            <li key={d.domain} className="domain-item">
-              <span className="domain-label">
-                {d.domain}
-                <span className="provider-badge">
-                  {formatProviderLabel(d.provider, language)}
+          {domains.map((d, i) => {
+            const isFixed = FIXED_DOMAIN_SET.has(d.domain);
+            return (
+              <li key={d.domain} className="domain-item">
+                <span className="domain-label">
+                  {d.domain}
+                  <span
+                    className={
+                      "provider-badge" + (isFixed ? "" : " provider-badge--selectable")
+                    }
+                  >
+                    {isFixed ? (
+                      formatProviderLabel(d.provider, language)
+                    ) : (
+                      <select
+                        className="provider-select"
+                        value={d.provider}
+                        onChange={(e) =>
+                          handleProviderChange(i, e.target.value as ProviderId)
+                        }
+                      >
+                        <option value="chatgpt">
+                          {formatProviderLabel("chatgpt", language)}
+                        </option>
+                        <option value="gemini">
+                          {formatProviderLabel("gemini", language)}
+                        </option>
+                        <option value="generic">
+                          {formatProviderLabel("generic", language)}
+                        </option>
+                      </select>
+                    )}
+                  </span>
                 </span>
-              </span>
-              <div className="domain-controls">
-                <Switch
-                  checked={d.enabled}
-                  onChange={(v) => handleToggle(i, v)}
-                />
-                <button
-                  type="button"
-                  className="trash-btn"
+                <div className="domain-controls">
+                  <Switch
+                    checked={d.enabled}
+                    onChange={(v) => handleToggle(i, v)}
+                  />
+                  <button
+                    type="button"
+                    className="trash-btn"
                     title={t("trashTooltip", language)}
-                  onClick={() => setPendingDeleteIndex(i)}
-                >
-                  <FiTrash2 />
-                </button>
-              </div>
-            </li>
-          ))}
+                    onClick={() => setPendingDeleteIndex(i)}
+                  >
+                    <FiTrash2 />
+                  </button>
+                </div>
+              </li>
+            );
+          })}
         </ul>
       </section>
 

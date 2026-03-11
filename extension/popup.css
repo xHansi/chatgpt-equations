@@ -274,6 +274,40 @@ body {
   color: #4f46e5;
 }
 
+.provider-badge--selectable {
+  background: #e0f2fe;
+  color: #0369a1;
+}
+
+.provider-select {
+  border: none;
+  background: transparent;
+  font: inherit;
+  color: inherit;
+  text-transform: inherit;
+  letter-spacing: inherit;
+  padding: 0 12px 0 0;
+  margin: 0;
+  outline: none;
+  cursor: pointer;
+  appearance: none;
+  position: relative;
+}
+
+.provider-select option {
+  color: #111827;
+  text-transform: none;
+  letter-spacing: normal;
+}
+
+/* Little caret to indicate the label is selectable */
+.provider-badge--selectable::after {
+  content: "▾";
+  margin-left: 4px;
+  font-size: 9px;
+  color: inherit;
+}
+
 .domain-controls {
   display: flex;
   align-items: center;

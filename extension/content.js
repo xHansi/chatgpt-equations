@@ -672,32 +672,32 @@ var translations = {
     fr: "✓ Copié"
   },
   provider_chatgpt: {
-    en: "ChatGPT",
-    de: "ChatGPT",
-    es: "ChatGPT",
-    it: "ChatGPT",
-    fr: "ChatGPT"
+    en: "KaTeX DOM",
+    de: "KaTeX-DOM",
+    es: "DOM KaTeX",
+    it: "DOM KaTeX",
+    fr: "DOM KaTeX"
   },
   provider_gemini: {
-    en: "Gemini",
-    de: "Gemini",
-    es: "Gemini",
-    it: "Gemini",
-    fr: "Gemini"
+    en: "LaTeX blocks",
+    de: "LaTeX-Blöcke",
+    es: "Bloques LaTeX",
+    it: "Blocchi LaTeX",
+    fr: "Blocs LaTeX"
   },
   provider_claude: {
-    en: "Claude",
-    de: "Claude",
-    es: "Claude",
-    it: "Claude",
-    fr: "Claude"
+    en: "KaTeX DOM",
+    de: "KaTeX-DOM",
+    es: "DOM KaTeX",
+    it: "DOM KaTeX",
+    fr: "DOM KaTeX"
   },
   provider_generic_experimental: {
-    en: "generic",
-    de: "generic",
-    es: "genérico",
-    it: "generico",
-    fr: "générique"
+    en: "Text heuristics",
+    de: "Texterkennung",
+    es: "Heurísticas texto",
+    it: "Euristiche testo",
+    fr: "Heuristiques texte"
   }
 };
 function t(key, lang) {

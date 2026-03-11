@@ -154,32 +154,32 @@ var translations = {
     fr: "✓ Copié"
   },
   provider_chatgpt: {
-    en: "ChatGPT",
-    de: "ChatGPT",
-    es: "ChatGPT",
-    it: "ChatGPT",
-    fr: "ChatGPT"
+    en: "KaTeX DOM",
+    de: "KaTeX-DOM",
+    es: "DOM KaTeX",
+    it: "DOM KaTeX",
+    fr: "DOM KaTeX"
   },
   provider_gemini: {
-    en: "Gemini",
-    de: "Gemini",
-    es: "Gemini",
-    it: "Gemini",
-    fr: "Gemini"
+    en: "LaTeX blocks",
+    de: "LaTeX-Blöcke",
+    es: "Bloques LaTeX",
+    it: "Blocchi LaTeX",
+    fr: "Blocs LaTeX"
   },
   provider_claude: {
-    en: "Claude",
-    de: "Claude",
-    es: "Claude",
-    it: "Claude",
-    fr: "Claude"
+    en: "KaTeX DOM",
+    de: "KaTeX-DOM",
+    es: "DOM KaTeX",
+    it: "DOM KaTeX",
+    fr: "DOM KaTeX"
   },
   provider_generic_experimental: {
-    en: "generic",
-    de: "generic",
-    es: "genérico",
-    it: "generico",
-    fr: "générique"
+    en: "Text heuristics",
+    de: "Texterkennung",
+    es: "Heurísticas texto",
+    it: "Euristiche testo",
+    fr: "Heuristiques texte"
   }
 };
 function t(key, lang) {
@@ -32681,6 +32681,9 @@ var STORAGE_KEY = "equationAssistantDomains";
 var DEFAULT_DOMAINS = (0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.seedDefaultDomains)().map(function (d) {
   return (0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.withDefaultProvider)(d);
 });
+var FIXED_DOMAIN_SET = new Set(DEFAULT_DOMAINS.map(function (d) {
+  return d.domain;
+}));
 function normalizeDomain(raw) {
   var trimmed = (raw || "").trim();
   if (!trimmed) return "";
@@ -32873,6 +32876,14 @@ var PopupApp = function PopupApp() {
     });
     void persist(next);
   }, [domains, persist]);
+  var handleProviderChange = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (index, provider) {
+    var next = domains.map(function (d, i) {
+      return i === index ? _objectSpread(_objectSpread({}, d), {}, {
+        provider: provider
+      }) : d;
+    });
+    void persist(next);
+  }, [domains, persist]);
   var handleDelete = (0,react__WEBPACK_IMPORTED_MODULE_0__.useCallback)(function (index) {
     var next = domains.filter(function (_, i) {
       return i !== index;
@@ -33000,13 +33011,30 @@ var PopupApp = function PopupApp() {
       }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("ul", {
         className: "domain-list",
         children: domains.map(function (d, i) {
+          var isFixed = FIXED_DOMAIN_SET.has(d.domain);
           return /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("li", {
             className: "domain-item",
             children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("span", {
               className: "domain-label",
               children: [d.domain, /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("span", {
-                className: "provider-badge",
-                children: formatProviderLabel(d.provider, language)
+                className: "provider-badge" + (isFixed ? "" : " provider-badge--selectable"),
+                children: isFixed ? formatProviderLabel(d.provider, language) : /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("select", {
+                  className: "provider-select",
+                  value: d.provider,
+                  onChange: function onChange(e) {
+                    return handleProviderChange(i, e.target.value);
+                  },
+                  children: [/*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("option", {
+                    value: "chatgpt",
+                    children: formatProviderLabel("chatgpt", language)
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("option", {
+                    value: "gemini",
+                    children: formatProviderLabel("gemini", language)
+                  }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsx)("option", {
+                    value: "generic",
+                    children: formatProviderLabel("generic", language)
+                  })]
+                })
               })]
             }), /*#__PURE__*/(0,react_jsx_runtime__WEBPACK_IMPORTED_MODULE_4__.jsxs)("div", {
               className: "domain-controls",
