@@ -1,10 +1,19 @@
 
 .cache/
 coverage/
-extension/content.js
-extension/content.js.map
 node_modules/
 *.log
+
+# Built extension bundles (Webpack output)
+extension/*.js
+extension/*.js.map
+
+# CI/CD artifacts
+extension.zip
+
+# Local env/config
+.env
+.env.*
 
 # OS generated files
 .DS_Store
