@@ -9,6 +9,7 @@ export interface ProviderDomainConfig {
 const DEFAULT_PROVIDER_MAP: Array<{ domain: string; provider: ProviderId }> = [
   { domain: "chat.openai.com", provider: "chatgpt" },
   { domain: "chatgpt.com", provider: "chatgpt" },
+  { domain: "grok.com", provider: "chatgpt" },
   { domain: "gemini.google.com", provider: "gemini" },
   { domain: "claude.ai", provider: "claude" },
 ];

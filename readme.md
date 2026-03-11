@@ -61,7 +61,7 @@ Copying that into Notion (or other tools) usually breaks formatting, loses the L
 
 - ✅ **Smart math detection**
   - Understands KaTeX-rendered formulas in ChatGPT.
-  - Handles multiple providers (ChatGPT, Gemini, Claude, generic LLMs).
+  - Handles multiple providers (ChatGPT, Grok, Gemini, Claude, generic LLMs).
   - Supports `$$…$$`, `$…$`, `\(...\)`, `\[...\]`, and heuristic detection of Unicode/ASCII math blocks.
 
 - ✅ **One-click “Copy for Notion”**
@@ -169,7 +169,7 @@ Chrome will now load your local build. When you edit the source and re-run `npm 
 
 ### Copying from ChatGPT / Other LLMs
 
-1. Open a conversation in ChatGPT, Gemini, Claude, or another supported host.
+1. Open a conversation in ChatGPT, Grok, Gemini, Claude, or another supported host.
 2. Select a snippet that contains math (inline or block).
 3. When the extension detects math, a floating **“Copy for Notion”** button appears near your selection.
 4. Click the button:

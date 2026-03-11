@@ -10,6 +10,7 @@ describe("providers", () => {
   it("maps known hosts to providers", () => {
     expect(getProviderForHost("chat.openai.com")).toBe("chatgpt");
     expect(getProviderForHost("chatgpt.com")).toBe("chatgpt");
+    expect(getProviderForHost("grok.com")).toBe("chatgpt");
     expect(getProviderForHost("gemini.google.com")).toBe("gemini");
     expect(getProviderForHost("claude.ai")).toBe("claude");
   });
