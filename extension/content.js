@@ -2,19 +2,18 @@
 /******/ 	"use strict";
 /******/ 	var __webpack_modules__ = ({
 
-/***/ "./src/content/chatgptContent.ts":
-/*!***************************************!*\
-  !*** ./src/content/chatgptContent.ts ***!
-  \***************************************/
+/***/ "./src/content/equationAssistant.ts":
+/*!******************************************!*\
+  !*** ./src/content/equationAssistant.ts ***!
+  \******************************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "initChatGptContent": () => (/* binding */ initChatGptContent)
+/* harmony export */   "initEquationAssistant": () => (/* binding */ initEquationAssistant)
 /* harmony export */ });
-/* harmony import */ var _core_selection__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../core/selection */ "./src/core/selection.ts");
-/* harmony import */ var _core_notionFormat__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../core/notionFormat */ "./src/core/notionFormat.ts");
-/* harmony import */ var _core_clipboard__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ../core/clipboard */ "./src/core/clipboard.ts");
+/* harmony import */ var _core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ../core/mathExtraction */ "./src/core/mathExtraction.ts");
+/* harmony import */ var _core_clipboard__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ../core/clipboard */ "./src/core/clipboard.ts");
 function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
 function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, _toPropertyKey(descriptor.key), descriptor); } }
@@ -25,30 +24,67 @@ function _toPrimitive(input, hint) { if (_typeof(input) !== "object" || input ==
 
 
 
-
-var NotionCopyGPT = /*#__PURE__*/function () {
-  function NotionCopyGPT() {
-    _classCallCheck(this, NotionCopyGPT);
-    this.setupCopyForNotion();
-    this.copyForNotionButton = null;
+var EquationAssistant = /*#__PURE__*/function () {
+  function EquationAssistant(provider) {
+    _classCallCheck(this, EquationAssistant);
+    this.provider = provider;
+    this.copyButton = null;
+    this._timer = null;
+    this.setupSelectionListeners();
   }
-  _createClass(NotionCopyGPT, [{
-    key: "showCopyForNotionButton",
-    value: function showCopyForNotionButton(selection) {
+  _createClass(EquationAssistant, [{
+    key: "setupSelectionListeners",
+    value: function setupSelectionListeners() {
       var _this = this;
-      if (this.copyForNotionButton && this.copyForNotionButton.classList.contains("gpt-eq-copy-for-notion-done")) {
+      document.addEventListener("mouseup", function () {
+        clearTimeout(_this._timer);
+        _this._timer = setTimeout(function () {
+          return _this.onSelectionChange();
+        }, 80);
+      });
+      document.addEventListener("selectionchange", function () {
+        clearTimeout(_this._timer);
+        _this._timer = setTimeout(function () {
+          return _this.onSelectionChange();
+        }, 100);
+      });
+    }
+  }, {
+    key: "onSelectionChange",
+    value: function onSelectionChange() {
+      var selection = window.getSelection();
+      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
+        this.hideCopyButton();
         return;
       }
-      if (this.copyForNotionButton) {
-        this.copyForNotionButton.remove();
-        this.copyForNotionButton = null;
+      var extracted = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(this.provider, selection);
+
+      // For some providers (e.g. Gemini) math may not use explicit LaTeX delimiters.
+      // In that case we still want to show the button as long as there is a non-empty selection.
+      var fallbackText = this.provider === "gemini" ? selection.toString() : "";
+      var textForButton = extracted && extracted.trim() || fallbackText.trim();
+      if (textForButton) {
+        this.showCopyButton(selection, textForButton);
+      } else {
+        this.hideCopyButton();
+      }
+    }
+  }, {
+    key: "showCopyButton",
+    value: function showCopyButton(selection, textToCopy) {
+      var _this2 = this;
+      if (this.copyButton && this.copyButton.classList.contains("gpt-eq-copy-for-notion-done")) {
+        return;
+      }
+      if (this.copyButton) {
+        this.copyButton.remove();
+        this.copyButton = null;
       }
       if (!selection || selection.rangeCount === 0) return;
       var range = selection.getRangeAt(0);
       var rects = range.getClientRects();
       var lastRect = rects.length ? rects[rects.length - 1] : null;
       if (!lastRect) return;
-      var textToCopy = (0,_core_notionFormat__WEBPACK_IMPORTED_MODULE_1__.getNotionFormatFromSelection)(selection);
       var btn = document.createElement("button");
       btn.type = "button";
       btn.className = "gpt-eq-copy-for-notion";
@@ -56,25 +92,68 @@ var NotionCopyGPT = /*#__PURE__*/function () {
       btn.addEventListener("click", function (e) {
         e.preventDefault();
         e.stopPropagation();
-        var toCopy = textToCopy;
-        if (!toCopy) toCopy = (0,_core_notionFormat__WEBPACK_IMPORTED_MODULE_1__.getNotionFormatFromSelection)(window.getSelection());
-        var finalText = toCopy || "";
+        var sel = window.getSelection();
+
+        // Gemini: zuerst normalen Copy-Vorgang triggern und den rohen Clipboard-Text
+        // in unser $<...>$-Format umwandeln, damit wir die gleiche Quelle nutzen wie Strg+C.
+        if (_this2.provider === "gemini" && typeof navigator !== "undefined" && navigator.clipboard && navigator.clipboard.readText) {
+          try {
+            document.execCommand("copy");
+          } catch (_unused) {
+            // ignore; wir fallen ggf. auf den normalen Pfad zurück
+          }
+          navigator.clipboard.readText().then(function (raw) {
+            var normalized = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.normalizeGeminiClipboardText)(raw);
+            var _final = normalized || textToCopy || "";
+            if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+              chrome.storage.local.set({
+                notionCopyText: _final
+              });
+            }
+            return (0,_core_clipboard__WEBPACK_IMPORTED_MODULE_1__.copyTextToClipboard)(_final);
+          }).then(function () {
+            btn.textContent = "✓ Copied!";
+            btn.classList.add("gpt-eq-copy-for-notion-done");
+            setTimeout(function () {
+              if (btn.parentNode) btn.remove();
+              _this2.copyButton = null;
+            }, 1800);
+          })["catch"](function () {
+            // Fallback auf den generischen Pfad, falls irgendetwas schief geht.
+            var fallbackFinal = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(_this2.provider, sel) || textToCopy || "";
+            if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
+              chrome.storage.local.set({
+                notionCopyText: fallbackFinal
+              });
+            }
+            (0,_core_clipboard__WEBPACK_IMPORTED_MODULE_1__.copyTextToClipboard)(fallbackFinal).then(function () {
+              btn.textContent = "✓ Copied!";
+              btn.classList.add("gpt-eq-copy-for-notion-done");
+              setTimeout(function () {
+                if (btn.parentNode) btn.remove();
+                _this2.copyButton = null;
+              }, 1800);
+            });
+          });
+          return;
+        }
+        var _final2 = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(_this2.provider, sel) || textToCopy || "";
         if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
           chrome.storage.local.set({
-            notionCopyText: finalText
+            notionCopyText: _final2
           });
         }
-        (0,_core_clipboard__WEBPACK_IMPORTED_MODULE_2__.copyTextToClipboard)(finalText).then(function () {
+        (0,_core_clipboard__WEBPACK_IMPORTED_MODULE_1__.copyTextToClipboard)(_final2).then(function () {
           btn.textContent = "✓ Copied!";
           btn.classList.add("gpt-eq-copy-for-notion-done");
           setTimeout(function () {
             if (btn.parentNode) btn.remove();
-            _this.copyForNotionButton = null;
+            _this2.copyButton = null;
           }, 1800);
         });
       });
       document.body.appendChild(btn);
-      this.copyForNotionButton = btn;
+      this.copyButton = btn;
       var padding = 8;
       var rect = btn.getBoundingClientRect();
       var top = lastRect.top - rect.height - padding;
@@ -83,50 +162,18 @@ var NotionCopyGPT = /*#__PURE__*/function () {
       btn.style.left = "".concat(left, "px");
     }
   }, {
-    key: "hideCopyForNotionButton",
-    value: function hideCopyForNotionButton() {
-      if (this.copyForNotionButton) {
-        this.copyForNotionButton.remove();
-        this.copyForNotionButton = null;
+    key: "hideCopyButton",
+    value: function hideCopyButton() {
+      if (this.copyButton) {
+        this.copyButton.remove();
+        this.copyButton = null;
       }
-    }
-  }, {
-    key: "onSelectionChange",
-    value: function onSelectionChange() {
-      var selection = window.getSelection();
-      if (!selection || selection.rangeCount === 0 || selection.isCollapsed) {
-        this.hideCopyForNotionButton();
-        return;
-      }
-      if ((0,_core_selection__WEBPACK_IMPORTED_MODULE_0__.selectionContainsKatex)(selection)) {
-        this.showCopyForNotionButton(selection);
-      } else {
-        this.hideCopyForNotionButton();
-      }
-    }
-  }, {
-    key: "setupCopyForNotion",
-    value: function setupCopyForNotion() {
-      var _this2 = this;
-      this._copyForNotionTimer = null;
-      document.addEventListener("mouseup", function () {
-        clearTimeout(_this2._copyForNotionTimer);
-        _this2._copyForNotionTimer = setTimeout(function () {
-          return _this2.onSelectionChange();
-        }, 80);
-      });
-      document.addEventListener("selectionchange", function () {
-        clearTimeout(_this2._copyForNotionTimer);
-        _this2._copyForNotionTimer = setTimeout(function () {
-          return _this2.onSelectionChange();
-        }, 100);
-      });
     }
   }]);
-  return NotionCopyGPT;
+  return EquationAssistant;
 }();
-function initChatGptContent() {
-  new NotionCopyGPT();
+function initEquationAssistant(provider) {
+  new EquationAssistant(provider);
 }
 
 /***/ }),
@@ -466,6 +513,180 @@ function collectEquationRanges(root) {
 
 /***/ }),
 
+/***/ "./src/core/mathExtraction.ts":
+/*!************************************!*\
+  !*** ./src/core/mathExtraction.ts ***!
+  \************************************/
+/***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
+
+__webpack_require__.r(__webpack_exports__);
+/* harmony export */ __webpack_require__.d(__webpack_exports__, {
+/* harmony export */   "extractMath": () => (/* binding */ extractMath),
+/* harmony export */   "extractMathFromChatGpt": () => (/* binding */ extractMathFromChatGpt),
+/* harmony export */   "extractMathFromGeminiSelection": () => (/* binding */ extractMathFromGeminiSelection),
+/* harmony export */   "extractMathFromSelectionGeneric": () => (/* binding */ extractMathFromSelectionGeneric),
+/* harmony export */   "getExtractionStrategy": () => (/* binding */ getExtractionStrategy),
+/* harmony export */   "normalizeGeminiClipboardText": () => (/* binding */ normalizeGeminiClipboardText)
+/* harmony export */ });
+/* harmony import */ var _notionFormat__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./notionFormat */ "./src/core/notionFormat.ts");
+
+function getSelectionRoot(selection) {
+  if (selection && selection.rangeCount > 0) {
+    var range = selection.getRangeAt(0);
+    var common = range.commonAncestorContainer;
+    if (common.nodeType === Node.ELEMENT_NODE) {
+      return common;
+    }
+    if (common.parentElement) {
+      return common.parentElement;
+    }
+  }
+  return document;
+}
+
+/**
+ * Wraps all well-formed $$...$$ block pairs with $<...>$ while leaving
+ * surrounding plain text completely untouched.
+ *
+ * - Scans sequentially for "$$" and forms pairs (open, close)
+ * - Ignores a trailing unmatched "$$"
+ */
+function wrapDoubleDollarBlocks(text) {
+  var indices = [];
+  var searchFrom = 0;
+  while (true) {
+    var idx = text.indexOf("$$", searchFrom);
+    if (idx === -1) break;
+    indices.push(idx);
+    searchFrom = idx + 2;
+  }
+  if (indices.length < 2) {
+    return text;
+  }
+  var result = "";
+  var lastPos = 0;
+  for (var i = 0; i + 1 < indices.length; i += 2) {
+    var openIdx = indices[i];
+    var closeIdx = indices[i + 1];
+    result += text.slice(lastPos, openIdx);
+    var inner = text.slice(openIdx + 2, closeIdx);
+    result += "$<".concat(inner.trim(), ">$");
+    lastPos = closeIdx + 2;
+  }
+  result += text.slice(lastPos);
+  return result;
+}
+
+/**
+ * Block-only normalization:
+ * - $$...$$ pairs
+ * - \( ... \) and \[ ... \]
+ * No inline $...$ handling.
+ */
+function applyBlockOnlyMathNormalization(text) {
+  var out = wrapDoubleDollarBlocks(text);
+  out = out.replace(/\\\(([^)]+)\\\)/g, function (_m, expr) {
+    return "$<".concat(expr.trim(), ">$");
+  });
+  out = out.replace(/\\\[([\s\S]*?)\\\]/g, function (_m, expr) {
+    return "$<".concat(expr.trim(), ">$");
+  });
+  return out;
+}
+
+/**
+ * Generic normalization for non-Gemini providers:
+ * - Block $$...$$ via pair logic
+ * - Inline $...$ (careful to avoid $$ and already-normalized $<...>$)
+ * - \( ... \), \[ ... \]
+ */
+function applyGenericMathNormalization(text) {
+  var out = wrapDoubleDollarBlocks(text);
+
+  // Inline $...$, but not $$...$$ or already $<...>$
+  out = out.replace(/(?<!\$)\$((?!<)[^$\n]+?)(?<!>)\$(?!\$)/g, function (_m, expr) {
+    return "$<".concat(expr.trim(), ">$");
+  });
+  out = out.replace(/\\\(([^)]+)\\\)/g, function (_m, expr) {
+    return "$<".concat(expr.trim(), ">$");
+  });
+  out = out.replace(/\\\[([\s\S]*?)\\\]/g, function (_m, expr) {
+    return "$<".concat(expr.trim(), ">$");
+  });
+  return out;
+}
+
+/**
+ * Generic text-based math extraction for non-ChatGPT providers:
+ * Uses the generic normalization including inline $...$.
+ */
+function extractMathFromSelectionGeneric(selection) {
+  if (!selection || selection.rangeCount === 0) return "";
+  var text = selection.toString();
+  if (!text.trim()) return "";
+  var out = applyGenericMathNormalization(text);
+  if (out === text) return "";
+  return out.trim();
+}
+
+/**
+ * Gemini-specific extraction:
+ * - Only block formulas ( $$...$$ pairs, \(...\), \[...\] )
+ * - No inline $...$ conversion so that text with $a$, $b$, $c$ etc. stays intact.
+ */
+function extractMathFromGeminiSelection(selection) {
+  if (!selection || selection.rangeCount === 0) return "";
+  var text = selection.toString();
+  if (!text.trim()) return "";
+  var out = applyBlockOnlyMathNormalization(text);
+  if (out === text) return "";
+  return out.trim();
+}
+
+/**
+ * ChatGPT-specific extractor: reuses the existing Notion formatter,
+ * which already walks the KaTeX DOM and produces $<...>$ segments.
+ */
+function extractMathFromChatGpt(selection) {
+  return (0,_notionFormat__WEBPACK_IMPORTED_MODULE_0__.getNotionFormatFromSelection)(selection);
+}
+function getExtractionStrategy(provider) {
+  switch (provider) {
+    case "chatgpt":
+      return function (_root, selection) {
+        return extractMathFromChatGpt(selection);
+      };
+    case "gemini":
+      return function (_root, selection) {
+        return extractMathFromGeminiSelection(selection);
+      };
+    case "perplexity":
+    case "claude":
+    case "generic":
+    default:
+      return function (_root, selection) {
+        return extractMathFromSelectionGeneric(selection);
+      };
+  }
+}
+function extractMath(provider, selection) {
+  var root = getSelectionRoot(selection);
+  var strategy = getExtractionStrategy(provider);
+  return strategy(root, selection);
+}
+
+/**
+ * Used by the Gemini-specific clipboard normalization to turn system clipboard
+ * text into the $<...>$ format with the same block-logic as above (no inline $...$).
+ */
+function normalizeGeminiClipboardText(raw) {
+  if (!raw) return "";
+  var out = applyBlockOnlyMathNormalization(raw);
+  return out.trim();
+}
+
+/***/ }),
+
 /***/ "./src/core/notionFormat.ts":
 /*!**********************************!*\
   !*** ./src/core/notionFormat.ts ***!
@@ -575,22 +796,92 @@ function getNotionFormatFromSelection(selection) {
 
 /***/ }),
 
-/***/ "./src/core/selection.ts":
+/***/ "./src/core/providers.ts":
 /*!*******************************!*\
-  !*** ./src/core/selection.ts ***!
+  !*** ./src/core/providers.ts ***!
   \*******************************/
 /***/ ((__unused_webpack_module, __webpack_exports__, __webpack_require__) => {
 
 __webpack_require__.r(__webpack_exports__);
 /* harmony export */ __webpack_require__.d(__webpack_exports__, {
-/* harmony export */   "selectionContainsKatex": () => (/* binding */ selectionContainsKatex)
+/* harmony export */   "getProviderForHost": () => (/* binding */ getProviderForHost),
+/* harmony export */   "hostMatchesDomain": () => (/* binding */ hostMatchesDomain),
+/* harmony export */   "seedDefaultDomains": () => (/* binding */ seedDefaultDomains),
+/* harmony export */   "withDefaultProvider": () => (/* binding */ withDefaultProvider)
 /* harmony export */ });
-function selectionContainsKatex(selection) {
-  if (!selection || selection.rangeCount === 0) return false;
-  var range = selection.getRangeAt(0);
-  if (range.collapsed) return false;
-  var fragment = range.cloneContents();
-  return !!(fragment.querySelector && fragment.querySelector(".katex"));
+function _typeof(obj) { "@babel/helpers - typeof"; return _typeof = "function" == typeof Symbol && "symbol" == typeof Symbol.iterator ? function (obj) { return typeof obj; } : function (obj) { return obj && "function" == typeof Symbol && obj.constructor === Symbol && obj !== Symbol.prototype ? "symbol" : typeof obj; }, _typeof(obj); }
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e) { throw _e; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e2) { didErr = true; err = _e2; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
+function ownKeys(object, enumerableOnly) { var keys = Object.keys(object); if (Object.getOwnPropertySymbols) { var symbols = Object.getOwnPropertySymbols(object); enumerableOnly && (symbols = symbols.filter(function (sym) { return Object.getOwnPropertyDescriptor(object, sym).enumerable; })), keys.push.apply(keys, symbols); } return keys; }
+function _objectSpread(target) { for (var i = 1; i < arguments.length; i++) { var source = null != arguments[i] ? arguments[i] : {}; i % 2 ? ownKeys(Object(source), !0).forEach(function (key) { _defineProperty(target, key, source[key]); }) : Object.getOwnPropertyDescriptors ? Object.defineProperties(target, Object.getOwnPropertyDescriptors(source)) : ownKeys(Object(source)).forEach(function (key) { Object.defineProperty(target, key, Object.getOwnPropertyDescriptor(source, key)); }); } return target; }
+function _defineProperty(obj, key, value) { key = _toPropertyKey(key); if (key in obj) { Object.defineProperty(obj, key, { value: value, enumerable: true, configurable: true, writable: true }); } else { obj[key] = value; } return obj; }
+function _toPropertyKey(arg) { var key = _toPrimitive(arg, "string"); return _typeof(key) === "symbol" ? key : String(key); }
+function _toPrimitive(input, hint) { if (_typeof(input) !== "object" || input === null) return input; var prim = input[Symbol.toPrimitive]; if (prim !== undefined) { var res = prim.call(input, hint || "default"); if (_typeof(res) !== "object") return res; throw new TypeError("@@toPrimitive must return a primitive value."); } return (hint === "string" ? String : Number)(input); }
+var DEFAULT_PROVIDER_MAP = [{
+  domain: "chat.openai.com",
+  provider: "chatgpt"
+}, {
+  domain: "chatgpt.com",
+  provider: "chatgpt"
+}, {
+  domain: "gemini.google.com",
+  provider: "gemini"
+}, {
+  domain: "perplexity.ai",
+  provider: "perplexity"
+}, {
+  domain: "www.perplexity.ai",
+  provider: "perplexity"
+}, {
+  domain: "claude.ai",
+  provider: "claude"
+}];
+function getProviderForHost(host) {
+  var direct = DEFAULT_PROVIDER_MAP.find(function (d) {
+    return d.domain === host;
+  });
+  if (direct) return direct.provider;
+  // Fallback: generic when we don't know this host.
+  return "generic";
+}
+function hostMatchesDomain(host, domain) {
+  if (host === domain) return true;
+  return host.endsWith("." + domain);
+}
+function withDefaultProvider(config) {
+  if (config.provider) {
+    return config;
+  }
+  return _objectSpread(_objectSpread({}, config), {}, {
+    provider: getProviderForHost(config.domain)
+  });
+}
+function seedDefaultDomains() {
+  // Use one canonical entry per domain from DEFAULT_PROVIDER_MAP.
+  var seen = new Set();
+  var result = [];
+  var _iterator = _createForOfIteratorHelper(DEFAULT_PROVIDER_MAP),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var _step$value = _step.value,
+        domain = _step$value.domain,
+        provider = _step$value.provider;
+      if (seen.has(domain)) continue;
+      seen.add(domain);
+      result.push({
+        domain: domain,
+        enabled: true,
+        provider: provider
+      });
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return result;
 }
 
 /***/ })
@@ -658,64 +949,58 @@ var __webpack_exports__ = {};
   !*** ./src/bootstrap.ts ***!
   \**************************/
 __webpack_require__.r(__webpack_exports__);
-/* harmony import */ var _content_chatgptContent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./content/chatgptContent */ "./src/content/chatgptContent.ts");
-/* harmony import */ var _content_notionContent__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./content/notionContent */ "./src/content/notionContent.ts");
+/* harmony import */ var _content_notionContent__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./content/notionContent */ "./src/content/notionContent.ts");
+/* harmony import */ var _content_equationAssistant__WEBPACK_IMPORTED_MODULE_1__ = __webpack_require__(/*! ./content/equationAssistant */ "./src/content/equationAssistant.ts");
+/* harmony import */ var _core_providers__WEBPACK_IMPORTED_MODULE_2__ = __webpack_require__(/*! ./core/providers */ "./src/core/providers.ts");
 // @ts-nocheck
 
 
 
-var isChatGptHost = location.host.includes("chat.openai.com") || location.host.includes("chatgpt.com");
+
 var isNotionHost = location.host.includes("notion.so") || location.host.includes("notion.site");
-var STORAGE_KEY = "gptEqDomains";
+var STORAGE_KEY = "equationAssistantDomains";
 
 /**
- * Load domain configuration from chrome.storage.local, falling back to defaults.
- * @returns {Promise<Array<{ domain: string; enabled: boolean }>>}
+ * Load domain configuration from chrome.storage.local, falling back to defaults
+ * and ensuring each entry has a provider field.
  */
 function loadDomainConfig() {
-  var DEFAULT_DOMAINS = [{
-    domain: "chat.openai.com",
-    enabled: true
-  }, {
-    domain: "chatgpt.com",
-    enabled: true
-  }, {
-    domain: "gemini.google.com",
-    enabled: true
-  }, {
-    domain: "perplexity.ai",
-    enabled: true
-  }];
+  var DEFAULT_DOMAINS = (0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.seedDefaultDomains)();
   return new Promise(function (resolve) {
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
       resolve(DEFAULT_DOMAINS);
       return;
     }
     chrome.storage.local.get(STORAGE_KEY, function (data) {
-      var list = data && data[STORAGE_KEY];
-      if (!list || !Array.isArray(list) || list.length === 0) {
+      var rawList = data && data[STORAGE_KEY];
+      if (!rawList || !Array.isArray(rawList) || rawList.length === 0) {
         resolve(DEFAULT_DOMAINS);
-      } else {
-        resolve(list);
+        return;
       }
+      var normalized = rawList.map(function (item) {
+        return (0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.withDefaultProvider)({
+          domain: item.domain,
+          enabled: item.enabled !== false,
+          provider: item.provider || (0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.getProviderForHost)(item.domain)
+        });
+      });
+      resolve(normalized);
     });
   });
 }
 loadDomainConfig().then(function (domains) {
-  if (isChatGptHost) {
-    var host = location.host;
-    var match = domains.find(function (d) {
-      return d.domain === host && d.enabled;
-    });
-    if (match) {
-      (0,_content_chatgptContent__WEBPACK_IMPORTED_MODULE_0__.initChatGptContent)();
-    }
+  var host = location.host;
+  var entry = domains.find(function (d) {
+    return d.enabled && (0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.hostMatchesDomain)(host, d.domain);
+  });
+  if (entry) {
+    (0,_content_equationAssistant__WEBPACK_IMPORTED_MODULE_1__.initEquationAssistant)(entry.provider);
+  } else {
+    // No explicit entry: fall back to generic provider on known chat-style hosts if desired.
+    // For now: do nothing when host is not explicitly enabled.
   }
-
-  // Notion-Verhalten bleibt immer aktiv; die Domain-Liste steuert nur die
-  // Hosts, auf denen ChatGPT-/LLM-Inhalte verarbeitet werden.
   if (isNotionHost) {
-    (0,_content_notionContent__WEBPACK_IMPORTED_MODULE_1__.initNotionContent)();
+    (0,_content_notionContent__WEBPACK_IMPORTED_MODULE_0__.initNotionContent)();
   }
 });
 })();

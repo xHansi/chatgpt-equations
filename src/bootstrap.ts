@@ -1,27 +1,20 @@
 // @ts-nocheck
 
-import { initChatGptContent } from "./content/chatgptContent";
 import { initNotionContent } from "./content/notionContent";
-
-const isChatGptHost =
-  location.host.includes("chat.openai.com") || location.host.includes("chatgpt.com");
+import { initEquationAssistant } from "./content/equationAssistant";
+import { getProviderForHost, withDefaultProvider, seedDefaultDomains, hostMatchesDomain } from "./core/providers";
 
 const isNotionHost =
   location.host.includes("notion.so") || location.host.includes("notion.site");
 
-const STORAGE_KEY = "gptEqDomains";
+const STORAGE_KEY = "equationAssistantDomains";
 
 /**
- * Load domain configuration from chrome.storage.local, falling back to defaults.
- * @returns {Promise<Array<{ domain: string; enabled: boolean }>>}
+ * Load domain configuration from chrome.storage.local, falling back to defaults
+ * and ensuring each entry has a provider field.
  */
 function loadDomainConfig() {
-  const DEFAULT_DOMAINS = [
-    { domain: "chat.openai.com", enabled: true },
-    { domain: "chatgpt.com", enabled: true },
-    { domain: "gemini.google.com", enabled: true },
-    { domain: "perplexity.ai", enabled: true },
-  ];
+  const DEFAULT_DOMAINS = seedDefaultDomains();
 
   return new Promise((resolve) => {
     if (typeof chrome === "undefined" || !chrome.storage || !chrome.storage.local) {
@@ -29,27 +22,33 @@ function loadDomainConfig() {
       return;
     }
     chrome.storage.local.get(STORAGE_KEY, (data) => {
-      const list = data && data[STORAGE_KEY];
-      if (!list || !Array.isArray(list) || list.length === 0) {
+      const rawList = data && data[STORAGE_KEY];
+      if (!rawList || !Array.isArray(rawList) || rawList.length === 0) {
         resolve(DEFAULT_DOMAINS);
-      } else {
-        resolve(list);
+        return;
       }
+      const normalized = rawList.map((item) =>
+        withDefaultProvider({
+          domain: item.domain,
+          enabled: item.enabled !== false,
+          provider: item.provider || getProviderForHost(item.domain),
+        })
+      );
+      resolve(normalized);
     });
   });
 }
 
 loadDomainConfig().then((domains) => {
-  if (isChatGptHost) {
-    const host = location.host;
-    const match = domains.find((d) => d.domain === host && d.enabled);
-    if (match) {
-      initChatGptContent();
-    }
+  const host = location.host;
+  const entry = domains.find((d) => d.enabled && hostMatchesDomain(host, d.domain));
+  if (entry) {
+    initEquationAssistant(entry.provider);
+  } else {
+    // No explicit entry: fall back to generic provider on known chat-style hosts if desired.
+    // For now: do nothing when host is not explicitly enabled.
   }
 
-  // Notion-Verhalten bleibt immer aktiv; die Domain-Liste steuert nur die
-  // Hosts, auf denen ChatGPT-/LLM-Inhalte verarbeitet werden.
   if (isNotionHost) {
     initNotionContent();
   }

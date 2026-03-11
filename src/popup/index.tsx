@@ -1,20 +1,16 @@
 import React, { useEffect, useState, useCallback } from "react";
 import { createRoot } from "react-dom/client";
 import { FiGithub, FiCoffee, FiHelpCircle, FiTrash2 } from "react-icons/fi";
+import type { ProviderId, ProviderDomainConfig } from "../core/providers";
+import { getProviderForHost, withDefaultProvider, seedDefaultDomains } from "../core/providers";
 
-interface DomainConfig {
-  domain: string;
-  enabled: boolean;
-}
+type DomainConfig = Required<ProviderDomainConfig>;
 
-const STORAGE_KEY = "gptEqDomains";
+const STORAGE_KEY = "equationAssistantDomains";
 
-const DEFAULT_DOMAINS: DomainConfig[] = [
-  { domain: "chat.openai.com", enabled: true },
-  { domain: "chatgpt.com", enabled: true },
-  { domain: "gemini.google.com", enabled: true },
-  { domain: "perplexity.ai", enabled: true },
-];
+const DEFAULT_DOMAINS: DomainConfig[] = seedDefaultDomains().map((d) =>
+  withDefaultProvider(d)
+) as DomainConfig[];
 
 function normalizeDomain(raw: string): string {
   const trimmed = (raw || "").trim();
@@ -38,14 +34,21 @@ async function loadDomains(): Promise<DomainConfig[]> {
       return;
     }
     chrome.storage.local.get(STORAGE_KEY, (data) => {
-      const list = (data && (data as any)[STORAGE_KEY]) as DomainConfig[] | undefined;
-      if (!list || !Array.isArray(list) || list.length === 0) {
+      const raw = (data && (data as any)[STORAGE_KEY]) as any[] | undefined;
+      if (!raw || !Array.isArray(raw) || raw.length === 0) {
         chrome.storage.local.set({ [STORAGE_KEY]: DEFAULT_DOMAINS }, () => {
           resolve([...DEFAULT_DOMAINS]);
         });
-      } else {
-        resolve(list);
+        return;
       }
+      const normalized: DomainConfig[] = raw.map((item: any) =>
+        withDefaultProvider({
+          domain: item.domain,
+          enabled: item.enabled !== false,
+          provider: (item.provider as ProviderId | undefined) || getProviderForHost(item.domain),
+        })
+      ) as DomainConfig[];
+      resolve(normalized);
     });
   });
 }
@@ -165,7 +168,10 @@ const PopupApp: React.FC = () => {
         <ul className="domain-list">
           {domains.map((d, i) => (
             <li key={d.domain} className="domain-item">
-              <span className="domain-label">{d.domain}</span>
+              <span className="domain-label">
+                {d.domain}
+                <span className="provider-badge">{d.provider}</span>
+              </span>
               <div className="domain-controls">
                 <Switch
                   checked={d.enabled}
