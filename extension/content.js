@@ -59,9 +59,9 @@ var EquationAssistant = /*#__PURE__*/function () {
       }
       var extracted = (0,_core_mathExtraction__WEBPACK_IMPORTED_MODULE_0__.extractMath)(this.provider, selection);
 
-      // For some providers (e.g. Gemini) math may not use explicit LaTeX delimiters.
+      // For non-ChatGPT providers math may not use explicit LaTeX delimiters.
       // In that case we still want to show the button as long as there is a non-empty selection.
-      var fallbackText = this.provider === "gemini" ? selection.toString() : "";
+      var fallbackText = this.provider === "chatgpt" ? "" : selection.toString();
       var textForButton = extracted && extracted.trim() || fallbackText.trim();
       if (textForButton) {
         this.showCopyButton(selection, textForButton);

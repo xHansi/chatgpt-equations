@@ -36,10 +36,10 @@ class EquationAssistant {
 
     const extracted = extractMath(this.provider, selection);
 
-    // For some providers (e.g. Gemini) math may not use explicit LaTeX delimiters.
+    // For non-ChatGPT providers math may not use explicit LaTeX delimiters.
     // In that case we still want to show the button as long as there is a non-empty selection.
     const fallbackText =
-      this.provider === "gemini" ? selection.toString() : "";
+      this.provider === "chatgpt" ? "" : selection.toString();
 
     const textForButton = (extracted && extracted.trim()) || fallbackText.trim();
 

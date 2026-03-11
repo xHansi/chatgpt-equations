@@ -107,7 +107,7 @@ const PopupApp: React.FC = () => {
       setInputValue("");
       return;
     }
-    const next = [...domains, { domain: normalized, enabled: true }];
+    const next = [...domains, withDefaultProvider({ domain: normalized, enabled: true }) as DomainConfig];
     void persist(next);
     setInputValue("");
   }, [domains, inputValue, persist]);

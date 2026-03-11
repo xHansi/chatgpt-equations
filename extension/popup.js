@@ -32597,10 +32597,10 @@ var PopupApp = function PopupApp() {
       setInputValue("");
       return;
     }
-    var next = [].concat(_toConsumableArray(domains), [{
+    var next = [].concat(_toConsumableArray(domains), [(0,_core_providers__WEBPACK_IMPORTED_MODULE_2__.withDefaultProvider)({
       domain: normalized,
       enabled: true
-    }]);
+    })]);
     void persist(next);
     setInputValue("");
   }, [domains, inputValue, persist]);
