@@ -529,6 +529,13 @@ __webpack_require__.r(__webpack_exports__);
 /* harmony export */   "normalizeGeminiClipboardText": () => (/* binding */ normalizeGeminiClipboardText)
 /* harmony export */ });
 /* harmony import */ var _notionFormat__WEBPACK_IMPORTED_MODULE_0__ = __webpack_require__(/*! ./notionFormat */ "./src/core/notionFormat.ts");
+function _slicedToArray(arr, i) { return _arrayWithHoles(arr) || _iterableToArrayLimit(arr, i) || _unsupportedIterableToArray(arr, i) || _nonIterableRest(); }
+function _nonIterableRest() { throw new TypeError("Invalid attempt to destructure non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); }
+function _iterableToArrayLimit(arr, i) { var _i = null == arr ? null : "undefined" != typeof Symbol && arr[Symbol.iterator] || arr["@@iterator"]; if (null != _i) { var _s, _e, _x, _r, _arr = [], _n = !0, _d = !1; try { if (_x = (_i = _i.call(arr)).next, 0 === i) { if (Object(_i) !== _i) return; _n = !1; } else for (; !(_n = (_s = _x.call(_i)).done) && (_arr.push(_s.value), _arr.length !== i); _n = !0); } catch (err) { _d = !0, _e = err; } finally { try { if (!_n && null != _i["return"] && (_r = _i["return"](), Object(_r) !== _r)) return; } finally { if (_d) throw _e; } } return _arr; } }
+function _arrayWithHoles(arr) { if (Array.isArray(arr)) return arr; }
+function _createForOfIteratorHelper(o, allowArrayLike) { var it = typeof Symbol !== "undefined" && o[Symbol.iterator] || o["@@iterator"]; if (!it) { if (Array.isArray(o) || (it = _unsupportedIterableToArray(o)) || allowArrayLike && o && typeof o.length === "number") { if (it) o = it; var i = 0; var F = function F() {}; return { s: F, n: function n() { if (i >= o.length) return { done: true }; return { done: false, value: o[i++] }; }, e: function e(_e2) { throw _e2; }, f: F }; } throw new TypeError("Invalid attempt to iterate non-iterable instance.\nIn order to be iterable, non-array objects must have a [Symbol.iterator]() method."); } var normalCompletion = true, didErr = false, err; return { s: function s() { it = it.call(o); }, n: function n() { var step = it.next(); normalCompletion = step.done; return step; }, e: function e(_e3) { didErr = true; err = _e3; }, f: function f() { try { if (!normalCompletion && it["return"] != null) it["return"](); } finally { if (didErr) throw err; } } }; }
+function _unsupportedIterableToArray(o, minLen) { if (!o) return; if (typeof o === "string") return _arrayLikeToArray(o, minLen); var n = Object.prototype.toString.call(o).slice(8, -1); if (n === "Object" && o.constructor) n = o.constructor.name; if (n === "Map" || n === "Set") return Array.from(o); if (n === "Arguments" || /^(?:Ui|I)nt(?:8|16|32)(?:Clamped)?Array$/.test(n)) return _arrayLikeToArray(o, minLen); }
+function _arrayLikeToArray(arr, len) { if (len == null || len > arr.length) len = arr.length; for (var i = 0, arr2 = new Array(len); i < len; i++) arr2[i] = arr[i]; return arr2; }
 
 function getSelectionRoot(selection) {
   if (selection && selection.rangeCount > 0) {
@@ -617,16 +624,128 @@ function applyGenericMathNormalization(text) {
 }
 
 /**
- * Generic text-based math extraction for non-ChatGPT providers:
- * Uses the generic normalization including inline $...$.
+ * Heuristik: erkennt Blöcke mit vielen Unicode-Math-Symbolen (DeepSeek-Style),
+ * um sie optional in LaTeX zu überführen.
  */
-function extractMathFromSelectionGeneric(selection) {
-  if (!selection || selection.rangeCount === 0) return "";
-  var text = selection.toString();
-  if (!text.trim()) return "";
-  var out = applyGenericMathNormalization(text);
-  if (out === text) return "";
-  return out.trim();
+function looksLikeUnicodeMathBlock(text) {
+  // Zeichen, die typisch für Unicode-Math-Ausgabe sind (griechisch, Operatoren, Integral, Partial, etc.)
+  var unicodeMathPattern = /[∂∫∞≈≠≤≥√±→⋅·╱∑∏ΔΛΩμνπφθλσρΓΨΦ]/;
+  // Wenn zu wenig solcher Zeichen vorkommen, behandeln wir es nicht als speziellen Block.
+  var hits = 0;
+  var _iterator = _createForOfIteratorHelper(text),
+    _step;
+  try {
+    for (_iterator.s(); !(_step = _iterator.n()).done;) {
+      var ch = _step.value;
+      if (unicodeMathPattern.test(ch)) {
+        hits++;
+        if (hits >= 3) return true;
+      }
+    }
+  } catch (err) {
+    _iterator.e(err);
+  } finally {
+    _iterator.f();
+  }
+  return false;
+}
+
+/**
+ * Heuristik für ASCII-basierte Math-Blöcke (DeepSeek-Style ohne Unicode),
+ * z.B. mehrzeilige "x = ..." mit vielen Operatoren, aber ohne lange Wörter.
+ */
+function looksLikeAsciiMathBlock(text) {
+  var trimmed = text.trim();
+  if (!trimmed) return false;
+
+  // Enthält mindestens ein Gleichheitszeichen oder +/- Vergleichsoperator.
+  if (!/[=±<>]/.test(trimmed)) {
+    return false;
+  }
+
+  // Wenn es "lange" Wörter gibt, ist es wahrscheinlich eher normaler Text.
+  if (/\b[A-Za-z]{5,}\b/.test(trimmed)) {
+    return false;
+  }
+
+  // Erlaubte Zeichen: Buchstaben, Ziffern, Leerraum und typische Operatoren/Klammern.
+  var disallowed = trimmed.replace(/[A-Za-z0-9\s()+\-*/=±^_.,]/g, "");
+  if (disallowed.length > 0) {
+    return false;
+  }
+  return true;
+}
+
+/**
+ * Sehr konservative Unicode-Math → LaTeX Abbildung für DeepSeek-Ausgaben.
+ * Wir decken nur häufige Symbole ab; unbekannte Zeichen bleiben unverändert.
+ */
+function normalizeUnicodeMathToLatex(text) {
+  var out = text;
+  var simpleMap = [
+  // Basic operators / structure
+  [/·|⋅/g, "\\cdot "], [/×/g, "\\times "], [/÷/g, "\\div "], [/∓/g, "\\mp "], [/±/g, "\\pm "], [/∑/g, "\\sum "], [/∏/g, "\\prod "], [/∐/g, "\\coprod "], [/∫/g, "\\int "], [/∮/g, "\\oint "], [/∂/g, "\\partial "], [/∇/g, "\\nabla "], [/√/g, "\\sqrt "], [/∞/g, "\\infty "], [/°/g, "^\\circ "], [/′/g, "'"], [/″/g, "''"],
+  // Relations / logic
+  [/≤/g, "\\le "], [/≥/g, "\\ge "], [/≠/g, "\\ne "], [/≈/g, "\\approx "], [/≃/g, "\\simeq "], [/≅/g, "\\cong "], [/≡/g, "\\equiv "], [/∝/g, "\\propto "], [/∈/g, "\\in "], [/∉/g, "\\notin "], [/⊂/g, "\\subset "], [/⊃/g, "\\supset "], [/⊆/g, "\\subseteq "], [/⊇/g, "\\supseteq "], [/⊄/g, "\\nsubseteq "], [/⊅/g, "\\nsupseteq "], [/∩/g, "\\cap "], [/∪/g, "\\cup "], [/⊎/g, "\\uplus "], [/⊕/g, "\\oplus "], [/⊖/g, "\\ominus "], [/⊗/g, "\\otimes "], [/⊘/g, "\\oslash "], [/⊙/g, "\\odot "], [/⊥/g, "\\perp "], [/∥/g, "\\parallel "], [/¬/g, "\\neg "],
+  // Arrows
+  [/→/g, "\\to "], [/←/g, "\\leftarrow "], [/⇒/g, "\\Rightarrow "], [/⇐/g, "\\Leftarrow "], [/⇔/g, "\\Leftrightarrow "], [/↦/g, "\\mapsto "],
+  // Blackboard bold sets
+  [/ℝ/g, "\\mathbb{R}"], [/ℤ/g, "\\mathbb{Z}"], [/ℚ/g, "\\mathbb{Q}"], [/ℂ/g, "\\mathbb{C}"], [/ℕ/g, "\\mathbb{N}"],
+  // Other common math symbols
+  [/ℏ/g, "\\hbar "], [/∅/g, "\\emptyset "], [/♯/g, "\\sharp "], [/♭/g, "\\flat "],
+  // Greek letters (lowercase)
+  [/α/g, "\\alpha "], [/β/g, "\\beta "], [/γ/g, "\\gamma "], [/δ/g, "\\delta "], [/ε/g, "\\epsilon "], [/ϵ/g, "\\varepsilon "], [/ζ/g, "\\zeta "], [/η/g, "\\eta "], [/θ/g, "\\theta "], [/ϑ/g, "\\vartheta "], [/ι/g, "\\iota "], [/κ/g, "\\kappa "], [/λ/g, "\\lambda "], [/μ/g, "\\mu "], [/ν/g, "\\nu "], [/ξ/g, "\\xi "], [/π/g, "\\pi "], [/ϖ/g, "\\varpi "], [/ρ/g, "\\rho "], [/ϱ/g, "\\varrho "], [/σ/g, "\\sigma "], [/ς/g, "\\sigma "], [/τ/g, "\\tau "], [/υ/g, "\\upsilon "], [/φ/g, "\\phi "], [/ϕ/g, "\\varphi "], [/χ/g, "\\chi "], [/ψ/g, "\\psi "], [/ω/g, "\\omega "],
+  // Greek letters (uppercase)
+  [/Γ/g, "\\Gamma "], [/Δ/g, "\\Delta "], [/Θ/g, "\\Theta "], [/Λ/g, "\\Lambda "], [/Ξ/g, "\\Xi "], [/Π/g, "\\Pi "], [/Σ/g, "\\Sigma "], [/Υ/g, "\\Upsilon "], [/Φ/g, "\\Phi "], [/Ψ/g, "\\Psi "], [/Ω/g, "\\Omega "]];
+  for (var _i = 0, _simpleMap = simpleMap; _i < _simpleMap.length; _i++) {
+    var _simpleMap$_i = _slicedToArray(_simpleMap[_i], 2),
+      re = _simpleMap$_i[0],
+      replacement = _simpleMap$_i[1];
+    out = out.replace(re, replacement);
+  }
+
+  // Unicode-Superscript-Digits → ^{n}
+  var superscripts = {
+    "⁰": "0",
+    "¹": "1",
+    "²": "2",
+    "³": "3",
+    "⁴": "4",
+    "⁵": "5",
+    "⁶": "6",
+    "⁷": "7",
+    "⁸": "8",
+    "⁹": "9"
+  };
+  out = out.replace(/[⁰¹²³⁴⁵⁶⁷⁸⁹]+/g, function (m) {
+    var digits = m.split("").map(function (ch) {
+      var _superscripts$ch;
+      return (_superscripts$ch = superscripts[ch]) !== null && _superscripts$ch !== void 0 ? _superscripts$ch : "";
+    }).join("");
+    return digits ? "^{".concat(digits, "}") : m;
+  });
+
+  // Unicode-Subscript-Digits → _{n}
+  var subscripts = {
+    "₀": "0",
+    "₁": "1",
+    "₂": "2",
+    "₃": "3",
+    "₄": "4",
+    "₅": "5",
+    "₆": "6",
+    "₇": "7",
+    "₈": "8",
+    "₉": "9"
+  };
+  out = out.replace(/[₀₁₂₃₄₅₆₇₈₉]+/g, function (m) {
+    var digits = m.split("").map(function (ch) {
+      var _subscripts$ch;
+      return (_subscripts$ch = subscripts[ch]) !== null && _subscripts$ch !== void 0 ? _subscripts$ch : "";
+    }).join("");
+    return digits ? "_{".concat(digits, "}") : m;
+  });
+  return out;
 }
 
 /**
@@ -683,6 +802,74 @@ function normalizeGeminiClipboardText(raw) {
   if (!raw) return "";
   var out = applyBlockOnlyMathNormalization(raw);
   return out.trim();
+}
+
+/**
+ * Generic text-based math extraction for non-ChatGPT providers:
+ * - Versucht zuerst klassische LaTeX-Delimiters zu normalisieren.
+ * - Fällt dann auf die Unicode/ASCII-Math-Heuristiken zurück (DeepSeek-Style),
+ *   um aus ungewöhnlich formatierten Blöcken einen einzelnen $<...>$-Ausdruck zu bauen.
+ */
+function extractMathFromSelectionGeneric(selection) {
+  if (!selection || selection.rangeCount === 0) return "";
+  var rawText = selection.toString();
+  if (!rawText.trim()) return "";
+
+  // 1) Direkte LaTeX-Normalisierung auf dem Gesamttext.
+  var direct = applyGenericMathNormalization(rawText);
+  if (direct !== rawText) {
+    return direct.trim();
+  }
+
+  // 2) DeepSeek-Style: Text in Absätze teilen und "mathigsten" Block suchen.
+  var paragraphs = rawText.split(/\n\s*\n+/);
+  var text = rawText;
+  var _iterator2 = _createForOfIteratorHelper(paragraphs),
+    _step2;
+  try {
+    for (_iterator2.s(); !(_step2 = _iterator2.n()).done;) {
+      var para = _step2.value;
+      var _candidate = para.trim();
+      if (!_candidate) continue;
+      if (looksLikeUnicodeMathBlock(_candidate) || looksLikeAsciiMathBlock(_candidate)) {
+        text = _candidate;
+        break;
+      }
+    }
+
+    // 3) Wenn das nicht reicht: von unten nach oben Zeilen sammeln, bis es mathig aussieht.
+  } catch (err) {
+    _iterator2.e(err);
+  } finally {
+    _iterator2.f();
+  }
+  if (!looksLikeUnicodeMathBlock(text) && !looksLikeAsciiMathBlock(text)) {
+    var lines = rawText.split(/\n+/).map(function (l) {
+      return l.trim();
+    }).filter(Boolean);
+    var acc = [];
+    for (var i = lines.length - 1; i >= 0; i--) {
+      acc.unshift(lines[i]);
+      var candidate = acc.join(" ");
+      if (looksLikeUnicodeMathBlock(candidate) || looksLikeAsciiMathBlock(candidate)) {
+        text = candidate;
+        break;
+      }
+    }
+  }
+
+  // 4) Wenn der finale Text immer noch nicht wie Math aussieht, brechen wir ab.
+  if (!looksLikeUnicodeMathBlock(text) && !looksLikeAsciiMathBlock(text)) {
+    return "";
+  }
+
+  // 5) Unicode→LaTeX-Mapping anwenden; falls nichts greift, Whitespace glätten.
+  var latex = normalizeUnicodeMathToLatex(text).trim();
+  if (!latex) {
+    latex = text.replace(/\s+/g, " ").trim();
+  }
+  if (!latex) return "";
+  return "$<".concat(latex, ">$");
 }
 
 /***/ }),

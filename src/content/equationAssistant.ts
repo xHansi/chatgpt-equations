@@ -74,8 +74,8 @@ class EquationAssistant {
 
       const sel = window.getSelection();
 
-      // Gemini: zuerst normalen Copy-Vorgang triggern und den rohen Clipboard-Text
-      // in unser $<...>$-Format umwandeln, damit wir die gleiche Quelle nutzen wie Strg+C.
+      // Gemini: first trigger a normal copy and then read the raw clipboard text,
+      // converting it into our $<...>$ format so we share the same source as Ctrl/Cmd+C.
       if (
         this.provider === "gemini" &&
         typeof navigator !== "undefined" &&
@@ -85,7 +85,7 @@ class EquationAssistant {
         try {
           document.execCommand("copy");
         } catch {
-          // ignore; wir fallen ggf. auf den normalen Pfad zurück
+          // ignore; we will fall back to the generic path if needed
         }
 
         (navigator as any).clipboard
@@ -109,7 +109,7 @@ class EquationAssistant {
             }, 1800);
           })
           .catch(() => {
-            // Fallback auf den generischen Pfad, falls irgendetwas schief geht.
+            // Fall back to the generic extraction path if anything goes wrong.
             const fallbackFinal = extractMath(this.provider, sel) || textToCopy || "";
             if (typeof chrome !== "undefined" && chrome.storage && chrome.storage.local) {
               chrome.storage.local.set({ notionCopyText: fallbackFinal });
